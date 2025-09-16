@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Serif, Roboto_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import "./globals.css";
 
 // Globally cached fonts with Next's built-in optimization
@@ -87,7 +88,6 @@ export const metadata: Metadata = {
   verification: {
     google: "your-google-verification-code",
     yandex: "your-yandex-verification-code",
-    bing: "your-bing-verification-code",
   },
   manifest: "/manifest.json",
   category: "food",
@@ -157,30 +157,70 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <Toaster />
+          <PWAInstallPrompt />
         </AuthProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                // Check if we're in production by looking at hostname
-                const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-                
-                if (isProduction) {
-                  window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/sw.js')
-                      .then(function(registration) {
-                        console.log('SW registered: ', registration);
-                      })
-                      .catch(function(registrationError) {
-                        console.log('SW registration failed: ', registrationError);
+                // Enhanced service worker registration with auto-update
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                      console.log('SW registered: ', registration);
+                      
+                      // Check for updates immediately
+                      registration.update();
+                      
+                      // Listen for updates
+                      registration.addEventListener('updatefound', function() {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                          newWorker.addEventListener('statechange', function() {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                              // New content is available, notify user
+                              if (confirm('New version available! Reload to update?')) {
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                window.location.reload();
+                              }
+                            }
+                          });
+                        }
                       });
-                  });
-                } else {
-                  // Ensure no SW during development to avoid caching issues
-                  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                    for (const reg of registrations) { reg.unregister(); }
-                  });
-                }
+                      
+                      // Listen for messages from service worker
+                      navigator.serviceWorker.addEventListener('message', function(event) {
+                        const { type, version } = event.data;
+                        
+                        switch (type) {
+                          case 'UPDATE_AVAILABLE':
+                            if (confirm('New version available! Reload to update?')) {
+                              window.location.reload();
+                            }
+                            break;
+                          case 'SW_ACTIVATED':
+                            console.log('Service worker activated, version:', version);
+                            break;
+                        }
+                      });
+                    })
+                    .catch(function(registrationError) {
+                      console.log('SW registration failed: ', registrationError);
+                    });
+                });
+                
+                // Handle online/offline events
+                window.addEventListener('online', function() {
+                  console.log('Back online');
+                  // Trigger service worker update check
+                  if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'CHECK_UPDATE' });
+                  }
+                });
+                
+                window.addEventListener('offline', function() {
+                  console.log('Gone offline');
+                });
               }
             `,
           }}

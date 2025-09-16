@@ -1,6 +1,7 @@
 {
-  "name": "CookGPT",
+  "name": "CookGPT - AI Recipe Assistant",
   "short_name": "CookGPT",
+  "description": "Transform your pantry into delicious meals with AI-powered recipe creation, intelligent meal planning, and food waste reduction.",
   "icons": [
     { "src": "/favicon-16x16.png", "sizes": "16x16", "type": "image/png", "purpose": "any" },
     { "src": "/favicon-32x32.png", "sizes": "32x32", "type": "image/png", "purpose": "any" },
@@ -12,7 +13,51 @@
   "theme_color": "#0f172a",
   "background_color": "#ffffff",
   "display": "standalone",
-  "start_url": "/",
+  "orientation": "portrait-primary",
+  "start_url": "/?source=pwa",
   "scope": "/",
-  "id": "/?source=pwa"
+  "id": "/?source=pwa",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["food", "lifestyle", "productivity", "utilities"],
+  "screenshots": [
+    {
+      "src": "/cookitnext_logo.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "CookGPT Recipe Creation Interface"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Recipe",
+      "short_name": "New Recipe",
+      "description": "Create a new AI-powered recipe",
+      "url": "/?action=create-recipe",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Meal Planning",
+      "short_name": "Meal Plan",
+      "description": "Plan your weekly meals",
+      "url": "/meal-planning",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Explore Recipes",
+      "short_name": "Explore",
+      "description": "Browse recipe collection",
+      "url": "/explore-recipes",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }
