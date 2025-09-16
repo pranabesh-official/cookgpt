@@ -1,0 +1,149 @@
+// Firestore Security Rules for CookIt Application
+// PRODUCTION-READY SECURE RULES with public recipe access
+// Updated to allow public exploration of recipes while maintaining security
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===== USER AUTHENTICATION HELPER =====
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // ===== RECIPES - PUBLIC READ ACCESS =====
+    // Recipes are publicly readable for exploration, but only creators can modify
+    match /recipes/{recipeId} {
+      // Read: Public access for recipe exploration (no auth required)
+      allow read: if true;
+      
+      // Write/Update: Only user's own recipes
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid;
+      
+      // Create: Only if user is creating their own recipe
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Delete: Only user's own recipes
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // ===== USER PREFERENCES =====
+    // Users can only access their own preferences
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // ===== CHAT CONVERSATIONS =====
+    // Users can only access their own chat sessions
+    match /chats/{chatId} {
+      // Read: Only if user owns the chat
+      allow read: if isAuthenticated() && 
+        (resource != null && resource.data.userId == request.auth.uid);
+      
+      // Write/Update: Only if user owns the chat
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid;
+      
+      // Create: Only if user is creating their own chat
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Delete: Only if user owns the chat
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // ===== SAVED RECIPES =====
+    // Users can only access their own saved recipes
+    match /savedRecipes/{recipeId} {
+      // Read: Only user's own saved recipes
+      allow read: if isAuthenticated() && 
+        (resource != null && resource.data.userId == request.auth.uid);
+      
+      // Write/Update: Only user's own recipes
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid;
+      
+      // Create: Only if user is saving to their own collection
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Delete: Only user's own saved recipes
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // ===== MEAL PLANS =====
+    // Users can only access their own meal plans
+    match /mealPlans/{planId} {
+      // Read: Only user's own meal plans
+      allow read: if isAuthenticated() && 
+        (resource != null && resource.data.userId == request.auth.uid);
+      
+      // Write/Update: Only user's own meal plans
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid;
+      
+      // Create: Only if user is creating their own meal plan
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Delete: Only user's own meal plans
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // ===== DEVELOPMENT/TEST COLLECTION =====
+    // For Firebase connection testing (remove in production)
+    match /test/{testId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // ===== DENY ALL OTHER ACCESS =====
+    // Explicitly deny access to any other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+/*
+🔥 UPDATED RULES: PUBLIC RECIPE EXPLORATION ENABLED
+
+Key Changes:
+✅ Recipes are now publicly readable (no authentication required)
+✅ Recipe exploration works for all users
+✅ Other collections remain secure and private
+✅ Users can only modify their own recipes
+
+SECURITY FEATURES MAINTAINED:
+✅ User preferences remain private
+✅ Chat conversations remain private  
+✅ Saved recipes remain private
+✅ Meal plans remain private
+✅ Recipe creation/modification requires authentication
+
+TO APPLY THESE UPDATED RULES:
+1. Go to Firebase Console → Your Project → Firestore Database
+2. Click "Rules" tab
+3. Replace ALL existing rules with the rules above
+4. Click "Publish" to apply
+
+These rules now support:
+- Public recipe exploration (main feature)
+- Secure user data protection
+- Authenticated recipe creation and management
+*/

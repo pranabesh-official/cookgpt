@@ -1,0 +1,43 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://cookgpt.in/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /private/
+Disallow: /functions/
+Disallow: /test-*/
+Disallow: /scripts/
+
+# Allow important pages
+Allow: /
+Allow: /about
+Allow: /explore-recipes
+Allow: /meal-planning
+Allow: /dashboard
+Allow: /login
+Allow: /register
+Allow: /preferences
+Allow: /onboarding
+
+# Crawl delay for better server performance
+Crawl-delay: 1
+
+# Additional directives for AI search engines
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /

@@ -1,0 +1,90 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - heading "Meal Planning Prompt Validation Test" [level=1] [ref=e4]
+      - paragraph [ref=e5]: Test the meal planning prompt validation system to ensure it properly handles dietary restrictions and user preferences when generating weekly meal plans.
+      - generic [ref=e6]:
+        - button "Set Test User (Vegan)" [active] [ref=e7]
+        - button "Set Vegetarian" [ref=e8]
+        - button "Set Gluten-Free" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e12]: Current User Preferences
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: "Dietary Restrictions:"
+          - generic [ref=e18]: vegan
+        - generic [ref=e19]:
+          - generic [ref=e20]: "Skill Level:"
+          - generic [ref=e21]: beginner
+        - generic [ref=e22]:
+          - generic [ref=e23]: "Cooking Time:"
+          - generic [ref=e24]: 30min
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]: Meal Planning Test Scenarios
+        - generic [ref=e28]: Click on any scenario to test meal planning prompt validation
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]:
+              - heading "Vegan meal plan with chicken request" [level=3] [ref=e34]
+              - paragraph [ref=e35]: Tests dietary restriction validation in meal planning context
+            - button "Test" [ref=e36]
+          - paragraph [ref=e37]:
+            - strong [ref=e38]: "Prompt:"
+            - text: "\"I need a meal plan for the week, but I want to include grilled chicken for protein\""
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - heading "Vegetarian meal plan with beef" [level=3] [ref=e42]
+              - paragraph [ref=e43]: Tests mixed dietary preferences in meal planning
+            - button "Test" [ref=e44]
+          - paragraph [ref=e45]:
+            - strong [ref=e46]: "Prompt:"
+            - text: "\"Create a meal plan for me with beef stir fry and vegetarian options\""
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - generic [ref=e49]:
+              - heading "Gluten-free meal plan with pasta" [level=3] [ref=e50]
+              - paragraph [ref=e51]: Tests gluten restriction validation in meal planning
+            - button "Test" [ref=e52]
+          - paragraph [ref=e53]:
+            - strong [ref=e54]: "Prompt:"
+            - text: "\"I need a gluten-free meal plan but want to include regular pasta dishes\""
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e57]:
+              - heading "Valid vegan meal plan" [level=3] [ref=e58]
+              - paragraph [ref=e59]: Tests valid dietary request in meal planning
+            - button "Test" [ref=e60]
+          - paragraph [ref=e61]:
+            - strong [ref=e62]: "Prompt:"
+            - text: "\"Create a vegan meal plan for the week with tofu, lentils, and vegetables\""
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - generic [ref=e65]:
+              - heading "Complex meal plan with multiple restrictions" [level=3] [ref=e66]
+              - paragraph [ref=e67]: Tests multiple conflicting dietary restrictions
+            - button "Test" [ref=e68]
+          - paragraph [ref=e69]:
+            - strong [ref=e70]: "Prompt:"
+            - text: "\"I need a meal plan that is vegan, gluten-free, and low-carb, but I want to include fish and dairy\""
+    - generic [ref=e71]:
+      - generic [ref=e72]:
+        - generic [ref=e73]: Custom Meal Planning Test
+        - generic [ref=e74]: Enter your own meal planning request to test
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - generic [ref=e78]: "Meal Plan Request:"
+          - textbox "Meal Plan Request:" [ref=e79]
+        - generic [ref=e80]:
+          - button "Test Validation" [disabled]
+          - button "Generate Meal Plan" [disabled]
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e86] [cursor=pointer]:
+    - img [ref=e87] [cursor=pointer]
+  - alert [ref=e90]
+```

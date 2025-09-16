@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "cookgpt-a865a",
+    "staging": "cookgpt-a865a"
+  },
+  "targets": {},
+  "etags": {}
+}
