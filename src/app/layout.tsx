@@ -86,7 +86,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-verification-code",
+    google: "sm_20NI2wqbLF20ortYA2zYl5PAkqo39sxLIYO0zdX4",
     yandex: "your-yandex-verification-code",
   },
   manifest: "/manifest.json",
@@ -152,6 +152,9 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#0f172a" />
         <meta name="theme-color" content="#0f172a" />
+        
+        {/* Google Search Console Verification */}
+        <meta name="google-site-verification" content="sm_20NI2wqbLF20ortYA2zYl5PAkqo39sxLIYO0zdX4" />
       </head>
       <body className={`${sans.variable} ${serif.variable} ${mono.variable}`}>
         <AuthProvider>
