@@ -123,6 +123,7 @@ export default function LandingPage() {
       <StructuredData type="organization" />
       <StructuredData type="website" />
       <StructuredData type="cooking-app" />
+      <StructuredData type="faq" />
       
       <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -132,17 +133,19 @@ export default function LandingPage() {
             <div className="flex items-center space-x-3">
               <Image
                 src="/cookitnext_logo.png"
-                alt="CookGPT Logo"
+                alt="CookGPT AI Meal Planner Logo - Personalized Recipe Generator India"
                 width={40}
                 height={40}
                 className="w-10 h-10"
               />
               <span className="text-xl font-bold text-foreground">CookGPT</span>
             </div>
-            <div className="hidden md:flex items-center space-x-6">
-              <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
-              <a href="#benefits" className="text-muted-foreground hover:text-foreground transition-colors">Benefits</a>
-              <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</a>
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="#features" className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50">AI Meal Planner Features</a>
+              <a href="#benefits" className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50">Food Waste Reduction</a>
+              <a href="/meal-planning" className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50">Weekly Meal Plans</a>
+              <a href="/explore-recipes" className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50">Personalized Recipes</a>
+              <a href="/about" className="text-base font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50">About</a>
             </div>
             
             {/* User Authentication Section */}
@@ -179,32 +182,32 @@ export default function LandingPage() {
                           <Menu className="w-5 h-5" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <div className="px-3 py-2">
-                          <p className="text-sm font-medium text-foreground">
+                      <DropdownMenuContent align="end" className="w-64">
+                        <div className="px-4 py-3">
+                          <p className="text-base font-semibold text-foreground">
                             {user.displayName || 'Welcome back!'}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-sm text-muted-foreground">
                             {user.email}
                           </p>
                         </div>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleDashboard}>
-                          <Calendar className="w-4 h-4 mr-2" />
-                          Dashboard
+                        <DropdownMenuItem onClick={handleDashboard} className="px-4 py-3">
+                          <Calendar className="w-5 h-5 mr-3" />
+                          <span className="text-base">Dashboard</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleMealPlanner}>
-                          <ChefHat className="w-4 h-4 mr-2" />
-                          Meal Planner
+                        <DropdownMenuItem onClick={handleMealPlanner} className="px-4 py-3">
+                          <ChefHat className="w-5 h-5 mr-3" />
+                          <span className="text-base">Meal Planner</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push("/preferences")}>
-                          <User className="w-4 h-4 mr-2" />
-                          Preferences
+                        <DropdownMenuItem onClick={() => router.push("/preferences")} className="px-4 py-3">
+                          <User className="w-5 h-5 mr-3" />
+                          <span className="text-base">Preferences</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Sign Out
+                        <DropdownMenuItem onClick={handleSignOut} className="text-red-600 px-4 py-3">
+                          <LogOut className="w-5 h-5 mr-3" />
+                          <span className="text-base">Sign Out</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -223,32 +226,32 @@ export default function LandingPage() {
                           </span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <div className="px-3 py-2">
-                          <p className="text-sm font-medium text-foreground">
+                      <DropdownMenuContent align="end" className="w-64">
+                        <div className="px-4 py-3">
+                          <p className="text-base font-semibold text-foreground">
                             {user.displayName || 'Welcome back!'}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-sm text-muted-foreground">
                             {user.email}
                           </p>
                         </div>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleDashboard}>
-                          <Calendar className="w-4 h-4 mr-2" />
-                          Dashboard
+                        <DropdownMenuItem onClick={handleDashboard} className="px-4 py-3">
+                          <Calendar className="w-5 h-5 mr-3" />
+                          <span className="text-base">Dashboard</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleMealPlanner}>
-                          <ChefHat className="w-4 h-4 mr-2" />
-                          Meal Planner
+                        <DropdownMenuItem onClick={handleMealPlanner} className="px-4 py-3">
+                          <ChefHat className="w-5 h-5 mr-3" />
+                          <span className="text-base">Meal Planner</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push("/preferences")}>
-                          <User className="w-4 h-4 mr-2" />
-                          Preferences
+                        <DropdownMenuItem onClick={() => router.push("/preferences")} className="px-4 py-3">
+                          <User className="w-5 h-5 mr-3" />
+                          <span className="text-base">Preferences</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Sign Out
+                        <DropdownMenuItem onClick={handleSignOut} className="text-red-600 px-4 py-3">
+                          <LogOut className="w-5 h-5 mr-3" />
+                          <span className="text-base">Sign Out</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -299,8 +302,8 @@ export default function LandingPage() {
                 </>
               ) : (
                 <>
-                  Transform Your Pantry Into
-                  <span className="text-primary block">Delicious Meals</span>
+                  AI Meal Planner for
+                  <span className="text-primary block">Personalized Recipes & Food Waste Reduction</span>
                 </>
               )}
             </motion.h1>
@@ -368,7 +371,7 @@ export default function LandingPage() {
                     className="text-lg px-8 py-6 h-auto"
                     onClick={() => router.push("/explore-recipes")}
                   >
-                    Explore Recipes
+                    Explore Personalized Recipes
                   </Button>
                 </>
               )}
@@ -388,10 +391,10 @@ export default function LandingPage() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Powerful Features for Modern Cooking
+              AI Meal Planner Features for Indian Families
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Everything you need to plan, create, and enjoy delicious meals with AI assistance
+              Smart meal planning, personalized recipes, and food waste reduction for healthy Indian cooking
             </p>
           </motion.div>
 
@@ -434,10 +437,10 @@ export default function LandingPage() {
               viewport={{ once: true }}
             >
               <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
-                Why Choose CookGPT?
+                Why Choose Our AI Meal Planner?
               </h2>
               <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-                Join thousands of users who have transformed their cooking experience with our AI-powered platform.
+                Join thousands of Indian families who have transformed their cooking experience with our AI-powered meal planning platform.
               </p>
               
               <div className="space-y-4">
@@ -471,8 +474,8 @@ export default function LandingPage() {
                       <Zap className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Smart & Fast</h3>
-                      <p className="text-sm text-muted-foreground">AI-powered suggestions in seconds</p>
+                      <h3 className="font-semibold text-foreground">Smart AI Meal Planning</h3>
+                      <p className="text-sm text-muted-foreground">AI-powered personalized recipes in seconds</p>
                     </div>
                   </div>
                   
@@ -481,8 +484,8 @@ export default function LandingPage() {
                       <Shield className="w-6 h-6 text-secondary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Secure & Private</h3>
-                      <p className="text-sm text-muted-foreground">Your data is always protected</p>
+                      <h3 className="font-semibold text-foreground">Food Waste Reduction</h3>
+                      <p className="text-sm text-muted-foreground">Smart pantry management to reduce waste</p>
                     </div>
                   </div>
                   
@@ -491,13 +494,112 @@ export default function LandingPage() {
                       <Users className="w-6 h-6 text-accent" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Community Driven</h3>
-                      <p className="text-sm text-muted-foreground">Share and discover recipes</p>
+                      <h3 className="font-semibold text-foreground">Indian Family Focused</h3>
+                      <p className="text-sm text-muted-foreground">Recipes and meal plans for Indian families</p>
                     </div>
-                  </div>
+                    </div>
                 </div>
               </Card>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              Frequently Asked Questions About AI Meal Planning
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Everything you need to know about our AI meal planner and personalized recipe generator
+            </p>
+          </motion.div>
+
+          <div className="max-w-4xl mx-auto">
+            <div className="space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+                className="bg-card/80 backdrop-blur-sm rounded-lg p-6 border border-border/40"
+              >
+                <h3 className="text-xl font-semibold text-foreground mb-3">
+                  What is an AI meal planner and how does it work?
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Our AI meal planner uses advanced artificial intelligence to create personalized weekly meal plans based on your dietary preferences, available ingredients, and nutritional goals. It analyzes your pantry contents and suggests recipes that help reduce food waste while ensuring balanced nutrition for Indian families.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                viewport={{ once: true }}
+                className="bg-card/80 backdrop-blur-sm rounded-lg p-6 border border-border/40"
+              >
+                <h3 className="text-xl font-semibold text-foreground mb-3">
+                  How does the personalized recipe generator work for Indian cooking?
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Our AI recipe generator creates custom recipes using traditional Indian ingredients and cooking methods. Simply input your available ingredients, dietary restrictions, and taste preferences, and our AI will generate authentic Indian recipes with detailed cooking instructions, nutritional information, and calorie counts.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                viewport={{ once: true }}
+                className="bg-card/80 backdrop-blur-sm rounded-lg p-6 border border-border/40"
+              >
+                <h3 className="text-xl font-semibold text-foreground mb-3">
+                  Can this app help reduce food waste in Indian households?
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Yes! Our AI meal planner specifically focuses on food waste reduction by suggesting recipes based on ingredients you already have. It helps you use leftover vegetables, grains, and spices effectively, reducing grocery costs and environmental impact while maintaining the authentic taste of Indian cuisine.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                viewport={{ once: true }}
+                className="bg-card/80 backdrop-blur-sm rounded-lg p-6 border border-border/40"
+              >
+                <h3 className="text-xl font-semibold text-foreground mb-3">
+                  Is the AI meal planner suitable for Indian families with different dietary needs?
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Absolutely! Our AI meal planner accommodates various Indian dietary preferences including vegetarian, vegan, Jain, diabetic-friendly, and weight management diets. It considers regional Indian cuisines and traditional cooking methods while ensuring balanced nutrition for all family members.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                viewport={{ once: true }}
+                className="bg-card/80 backdrop-blur-sm rounded-lg p-6 border border-border/40"
+              >
+                <h3 className="text-xl font-semibold text-foreground mb-3">
+                  How accurate is the calorie tracking and nutritional information?
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Our AI provides highly accurate calorie estimation and nutritional analysis using comprehensive Indian food databases. The system considers traditional cooking methods, regional variations, and portion sizes commonly used in Indian households, giving you reliable nutritional insights for better health management.
+                </p>
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -512,12 +614,12 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
-              {user ? "Ready to Continue Your Cooking Journey?" : "Ready to Transform Your Cooking?"}
+              {user ? "Ready to Continue Your AI Meal Planning Journey?" : "Ready to Start Your AI Meal Planning Journey?"}
             </h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               {user 
-                ? "Keep exploring new recipes and planning your meals with CookGPT"
-                : "Join thousands of users who are already cooking smarter with CookGPT"
+                ? "Keep exploring personalized recipes and smart meal planning with our AI assistant"
+                : "Join thousands of Indian families who are already cooking smarter with our AI meal planner"
               }
             </p>
             <Button
@@ -533,33 +635,102 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-muted/30 py-12">
+      <footer className="border-t border-border/40 bg-muted/30 py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-3 mb-4 md:mb-0">
-              <Image
-                src="/cookitnext_logo.png"
-                alt="CookGPT Logo"
-                width={32}
-                height={32}
-                className="w-8 h-8"
-              />
-              <span className="text-lg font-semibold text-foreground">CookGPT</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* Brand Section */}
+            <div className="flex flex-col items-start space-y-4">
+              <div className="flex items-center space-x-3">
+                <Image
+                  src="/cookitnext_logo.png"
+                  alt="CookGPT AI Meal Planner Logo - Food Waste Reduction App India"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10"
+                />
+                <span className="text-2xl font-bold text-foreground">CookGPT</span>
+              </div>
+              <p className="text-muted-foreground text-sm max-w-xs">
+                India's #1 AI meal planner for personalized recipes, weekly meal plans, and food waste reduction.
+              </p>
             </div>
-            <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-              <a 
-                href="/terms" 
-                className="hover:text-foreground transition-colors cursor-pointer"
-              >
-                Terms & Conditions
-              </a>
-              <a 
-                href="/cancellation" 
-                className="hover:text-foreground transition-colors cursor-pointer"
-              >
-                Cancellation & Refund
-              </a>
-              <span>© 2024 CookGPT. All rights reserved. | Maintained by <a href="https://quantumbitlabs.in/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors underline">QuantumBit Labs</a></span>
+
+            {/* Quick Links */}
+            <div className="flex flex-col space-y-4">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Quick Links</h3>
+              <div className="flex flex-col space-y-3">
+                <a 
+                  href="/meal-planning" 
+                  className="text-base text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  Weekly Meal Plans
+                </a>
+                <a 
+                  href="/explore-recipes" 
+                  className="text-base text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  AI Recipe Generator
+                </a>
+                <a 
+                  href="/dashboard" 
+                  className="text-base text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  Dashboard
+                </a>
+                <a 
+                  href="/about" 
+                  className="text-base text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  About Us
+                </a>
+              </div>
+            </div>
+
+            {/* Legal & Support */}
+            <div className="flex flex-col space-y-4">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Support</h3>
+              <div className="flex flex-col space-y-3">
+                <a 
+                  href="/terms" 
+                  className="text-base text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  Terms & Conditions
+                </a>
+                <a 
+                  href="/cancellation" 
+                  className="text-base text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  Cancellation & Refund
+                </a>
+                <a 
+                  href="mailto:support@cookgpt.in" 
+                  className="text-base text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  Contact Support
+                </a>
+                <a 
+                  href="https://quantumbitlabs.in/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-base text-muted-foreground hover:text-foreground transition-colors hover:underline"
+                >
+                  QuantumBit Labs
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-border/40 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+              <p className="text-sm text-muted-foreground">
+                © 2024 CookGPT. All rights reserved.
+              </p>
+              <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+                <span>Made with ❤️ for Indian families</span>
+                <span>•</span>
+                <span>AI-Powered Cooking Assistant</span>
+              </div>
             </div>
           </div>
         </div>

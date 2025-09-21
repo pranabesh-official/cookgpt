@@ -1,7 +1,7 @@
 import Script from 'next/script';
 
 interface StructuredDataProps {
-  type: 'organization' | 'website' | 'recipe' | 'cooking-app';
+  type: 'organization' | 'website' | 'recipe' | 'cooking-app' | 'faq';
   data?: Record<string, unknown>;
 }
 
@@ -147,6 +147,54 @@ export function StructuredData({ type, data }: StructuredDataProps) {
             "@type": "Organization",
             "name": "CookGPT"
           }
+        };
+
+      case 'faq':
+        return {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is an AI meal planner and how does it work?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Our AI meal planner uses advanced artificial intelligence to create personalized weekly meal plans based on your dietary preferences, available ingredients, and nutritional goals. It analyzes your pantry contents and suggests recipes that help reduce food waste while ensuring balanced nutrition for Indian families."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does the personalized recipe generator work for Indian cooking?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Our AI recipe generator creates custom recipes using traditional Indian ingredients and cooking methods. Simply input your available ingredients, dietary restrictions, and taste preferences, and our AI will generate authentic Indian recipes with detailed cooking instructions, nutritional information, and calorie counts."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can this app help reduce food waste in Indian households?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes! Our AI meal planner specifically focuses on food waste reduction by suggesting recipes based on ingredients you already have. It helps you use leftover vegetables, grains, and spices effectively, reducing grocery costs and environmental impact while maintaining the authentic taste of Indian cuisine."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is the AI meal planner suitable for Indian families with different dietary needs?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Absolutely! Our AI meal planner accommodates various Indian dietary preferences including vegetarian, vegan, Jain, diabetic-friendly, and weight management diets. It considers regional Indian cuisines and traditional cooking methods while ensuring balanced nutrition for all family members."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How accurate is the calorie tracking and nutritional information?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Our AI provides highly accurate calorie estimation and nutritional analysis using comprehensive Indian food databases. The system considers traditional cooking methods, regional variations, and portion sizes commonly used in Indian households, giving you reliable nutritional insights for better health management."
+              }
+            }
+          ]
         };
 
       default:
