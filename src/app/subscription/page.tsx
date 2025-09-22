@@ -9,13 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth-context";
 import { SUBSCRIPTION_PLANS, getUserSubscriptionTier } from "@/lib/subscription";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "@/lib/firebase";
 import {
   Check,
   Crown,
   Star,
   Zap,
   ArrowLeft,
-  CreditCard
+  CreditCard,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 
@@ -25,12 +28,35 @@ export default function SubscriptionPage() {
   const currentTier = getUserSubscriptionTier(user);
 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
 
-  const handleUpgrade = (planId: string) => {
-    // TODO: Implement payment integration with Cashfree
-    console.log(`Upgrading to plan: ${planId}`);
-    // For now, just show a message
-    alert(`Payment integration with Cashfree coming soon! Selected plan: ${planId}`);
+  const handleUpgrade = async (planId: string) => {
+    if (!user) {
+      alert('Please sign in to upgrade');
+      return;
+    }
+
+    setIsUpgrading(planId);
+
+    try {
+      const createSubscriptionFunction = httpsCallable(functions, 'createSubscription');
+      const result = await createSubscriptionFunction({
+        userId: user.uid,
+        planId: planId
+      });
+
+      if (result.data.success) {
+        // Redirect to Cashfree payment link
+        window.location.href = result.data.redirectUrl;
+      } else {
+        alert('Failed to initiate upgrade. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error upgrading:', error);
+      alert('An error occurred. Please try again.');
+    } finally {
+      setIsUpgrading(null);
+    }
   };
 
   const getPlanIcon = (tier: string) => {
@@ -170,10 +196,15 @@ export default function SubscriptionPage() {
                   <Button
                     className="w-full"
                     variant={tier === currentTier ? "secondary" : "default"}
-                    disabled={tier === currentTier}
+                    disabled={tier === currentTier || isUpgrading === tier}
                     onClick={() => handleUpgrade(tier)}
                   >
-                    {tier === currentTier ? (
+                    {isUpgrading === tier ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : tier === currentTier ? (
                       <>
                         <Check className="w-4 h-4 mr-2" />
                         Current Plan
