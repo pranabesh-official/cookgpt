@@ -28,6 +28,13 @@ import { useAuth } from "@/lib/auth-context";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { generatePersonalizedRecipes, Recipe, isGeminiAvailable } from "@/lib/gemini-service";
 import { processRecipeImageUrl } from "@/lib/storage-service";
+import {
+  getUserSubscriptionTier,
+  canAccessMealPlanning,
+  canSaveFavorites,
+  getUpgradeMessage,
+  SUBSCRIPTION_PLANS
+} from "@/lib/subscription";
 
 interface RecipeModalProps {
   recipe: Recipe | null;
@@ -479,6 +486,16 @@ export default function MealPlanningPage() {
       return;
     }
 
+    // Check subscription limits for meal planning
+    if (!canAccessMealPlanning(user)) {
+      const tier = getUserSubscriptionTier(user);
+      const plan = SUBSCRIPTION_PLANS[tier];
+      toast.error('Meal planning feature is not available', {
+        description: `Upgrade to ${SUBSCRIPTION_PLANS.pro.name} (₹${plan.price}/month) to access meal planning!`
+      });
+      return;
+    }
+
     if (!isGeminiAvailable()) {
       toast.error('AI service not available', {
         description: 'Please check your Gemini API key configuration.'
@@ -688,6 +705,16 @@ export default function MealPlanningPage() {
   const saveMealPlan = async () => {
     if (!user || !db || Object.keys(weeklyMeals).length === 0) {
       toast.error('No meal plan to save');
+      return;
+    }
+
+    // Check subscription limits for saving meal plans
+    if (!canAccessMealPlanning(user)) {
+      const tier = getUserSubscriptionTier(user);
+      const plan = SUBSCRIPTION_PLANS[tier];
+      toast.error('Meal planning feature is not available', {
+        description: `Upgrade to ${SUBSCRIPTION_PLANS.pro.name} (₹${plan.price}/month) to save meal plans!`
+      });
       return;
     }
 
@@ -1089,7 +1116,17 @@ export default function MealPlanningPage() {
       toast.error('Please sign in to save recipes');
       return;
     }
-    
+
+    // Check subscription limits for saving favorites
+    if (!canSaveFavorites(user)) {
+      const tier = getUserSubscriptionTier(user);
+      const plan = SUBSCRIPTION_PLANS[tier];
+      toast.error('Save favorites feature is not available', {
+        description: `Upgrade to ${SUBSCRIPTION_PLANS.basic.name} (₹${plan.price}/month) to save recipes!`
+      });
+      return;
+    }
+
     try {
       // Check if recipe is already saved
       const existingQuery = query(

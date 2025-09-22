@@ -27,8 +27,16 @@ import { generatePersonalizedRecipes, generatePersonalizedRecipesProgressive, Re
 import { handleRecipeRequest, generateCompliantRecipe, createDietaryConflictFlow } from "@/lib/conversation-service";
 import { testFirebaseConnection, testSpecificCollections } from "@/lib/firebase-test";
 import { processRecipeImageUrl } from "@/lib/storage-service";
+import {
+  getUserSubscriptionTier,
+  canGenerateRecipes,
+  canSaveFavorites,
+  getUpgradeMessage,
+  SUBSCRIPTION_PLANS
+} from "@/lib/subscription";
 import RecipeCard from "@/components/ui/recipe-card";
 import RecipePanel from "@/components/ui/recipe-panel";
+import SubscriptionStatus from "@/components/ui/subscription-status";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   User,
@@ -59,7 +67,8 @@ import {
   Eye,
   FolderOpen,
   Filter,
-  SlidersHorizontal
+  SlidersHorizontal,
+  CreditCard
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -818,15 +827,39 @@ export default function DashboardPage() {
       
       if (isRecipeRequest && userPreferences?.onboardingCompleted && isGeminiAvailable()) {
         try {
+          // Check subscription limits before generating recipes
+          const userTier = getUserSubscriptionTier(user);
+          const upgradeMessage = getUpgradeMessage(user);
+
+          // For demo, simulate daily count - in production, track this in Firestore
+          const dailyRecipeCount = 0; // TODO: Get actual count from user's daily usage
+
+          if (!canGenerateRecipes(user, dailyRecipeCount)) {
+            botResponse = {
+              id: (Date.now() + 1).toString(),
+              text: upgradeMessage,
+              isBot: true,
+              timestamp: new Date(),
+              recipes: []
+            };
+
+            setChatMessages(prev => [...prev, botResponse]);
+
+            // Auto-save conversation
+            const finalMessages = [...chatMessages, userMessage, botResponse];
+            await autoSaveChatSession(finalMessages);
+            return;
+          }
+
           // Validate the request against user preferences
           const conversationContext = {
             userPreferences,
             chatHistory: chatMessages.map(msg => msg.text),
             currentTopic: 'recipe_generation'
           };
-          
+
           const validationResponse = await handleRecipeRequest(chatMessage, conversationContext);
-          
+
           if (!validationResponse.shouldGenerateRecipe) {
             // Handle dietary conflicts or other validation issues
             botResponse = {
@@ -836,9 +869,9 @@ export default function DashboardPage() {
               timestamp: new Date(),
               recipes: []
             };
-            
+
             setChatMessages(prev => [...prev, botResponse]);
-            
+
             // Auto-save conversation
             const finalMessages = [...chatMessages, userMessage, botResponse];
             await autoSaveChatSession(finalMessages);
@@ -1063,7 +1096,17 @@ export default function DashboardPage() {
       toast.error('Please sign in to save recipes');
       return;
     }
-    
+
+    // Check subscription limits for saving favorites
+    if (!canSaveFavorites(user)) {
+      const tier = getUserSubscriptionTier(user);
+      const plan = SUBSCRIPTION_PLANS[tier];
+      toast.error('Save favorites feature is not available', {
+        description: `Upgrade to ${SUBSCRIPTION_PLANS.basic.name} (₹${plan.price}/month) to save recipes!`
+      });
+      return;
+    }
+
     try {
       console.log('🔄 Saving recipe:', recipe.title, 'for user:', user.uid);
       
@@ -1277,6 +1320,12 @@ export default function DashboardPage() {
                     Preferences
                   </DropdownMenuItem>
                 </Link>
+                <Link href="/subscription">
+                  <DropdownMenuItem>
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Subscription
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
                   {isLoggingOut ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <LogOut className="w-4 h-4 mr-2" />}
@@ -1389,6 +1438,11 @@ export default function DashboardPage() {
                       Saved {savedRecipes.length > 0 && `(${savedRecipes.length})`}
                     </Button>
                   </div>
+                </div>
+
+                {/* Subscription Status */}
+                <div className="mb-4">
+                  <SubscriptionStatus />
                 </div>
 
                 {/* Content Area */}
