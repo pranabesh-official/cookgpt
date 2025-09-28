@@ -296,7 +296,7 @@ export default function DashboardPage() {
       // Try to detect if Firebase is available
       try {
         // If Firebase auth is not available, use static fallback
-        if (!window.firebase) {
+        if (!(window as any).firebase) {
           setUseStaticFallback(true);
           return;
         }
