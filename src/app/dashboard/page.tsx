@@ -80,6 +80,7 @@ import {
   deleteDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import StaticDashboardFallback from "./static-fallback";
 
 interface ChatMessage {
   id: string;
@@ -281,12 +282,30 @@ export default function DashboardPage() {
     setHasMounted(true);
   }, []);
 
-  // Redirect if not authenticated
+  // Handle static export fallback
+  const [useStaticFallback, setUseStaticFallback] = useState(false);
+  
+  // Redirect if not authenticated, but allow static fallback
   const hasRedirected = useRef(false);
   useEffect(() => {
     if (!hasMounted) return; // Wait for client-side mounting
     if (hasRedirected.current) return;
-    if (!loading && !user) {
+    
+    // Check if we're in static export mode (no Firebase auth available)
+    if (typeof window !== 'undefined' && !loading && !user) {
+      // Try to detect if Firebase is available
+      try {
+        // If Firebase auth is not available, use static fallback
+        if (!window.firebase) {
+          setUseStaticFallback(true);
+          return;
+        }
+      } catch (error) {
+        setUseStaticFallback(true);
+        return;
+      }
+      
+      // If Firebase is available but no user, redirect to login
       hasRedirected.current = true;
       router.replace("/");
     }
@@ -1209,6 +1228,11 @@ export default function DashboardPage() {
     }
     return 'U';
   };
+
+  // Show static fallback if Firebase auth is not available
+  if (useStaticFallback) {
+    return <StaticDashboardFallback />;
+  }
 
   // Loading state - only show after client-side mounting to prevent hydration mismatch
   if (!hasMounted || loading) {
