@@ -26,12 +26,101 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "**/*.txt"
     ],
     "rewrites": [
       {
+        "source": "/login",
+        "destination": "/login/index.html"
+      },
+      {
+        "source": "/dashboard",
+        "destination": "/dashboard/index.html"
+      },
+      {
+        "source": "/smart-dashboard",
+        "destination": "/smart-dashboard/index.html"
+      },
+      {
+        "source": "/register",
+        "destination": "/register/index.html"
+      },
+      {
+        "source": "/about",
+        "destination": "/about/index.html"
+      },
+      {
+        "source": "/preferences",
+        "destination": "/preferences/index.html"
+      },
+      {
+        "source": "/onboarding",
+        "destination": "/onboarding/index.html"
+      },
+      {
+        "source": "/explore-recipes",
+        "destination": "/explore-recipes/index.html"
+      },
+      {
+        "source": "/meal-planning",
+        "destination": "/meal-planning/index.html"
+      },
+      {
+        "source": "/terms",
+        "destination": "/terms/index.html"
+      },
+      {
+        "source": "/cancellation",
+        "destination": "/cancellation/index.html"
+      },
+      {
+        "source": "/pwa-settings",
+        "destination": "/pwa-settings/index.html"
+      },
+      {
+        "source": "/demo",
+        "destination": "/demo/index.html"
+      },
+      {
+        "source": "/home",
+        "destination": "/home/index.html"
+      },
+      {
+        "source": "/test-meal-planning",
+        "destination": "/test-meal-planning/index.html"
+      },
+      {
+        "source": "/test-prompt",
+        "destination": "/test-prompt/index.html"
+      },
+      {
+        "source": "/offline",
+        "destination": "/offline/index.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=31536000"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|ico)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=31536000"
+          }
+        ]
       }
     ]
   },

@@ -9,8 +9,13 @@ const nextConfig: NextConfig = {
   },
   output: 'export', 
   trailingSlash: true,
+  distDir: 'out',
   images: {
     unoptimized: true,
+  },
+  // Disable generation of .txt files
+  generateBuildId: async () => {
+    return 'build-' + Date.now()
   },
   // PWA optimizations
   async headers() {
