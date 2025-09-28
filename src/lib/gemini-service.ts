@@ -59,6 +59,48 @@ export interface Recipe {
   base64Image?: string; // Added for storing base64 image data in Firestore
 }
 
+// Helper function to safely parse JSON from AI response
+function parseRecipeJSON(jsonText: string): Recipe[] {
+  // Clean up the JSON string
+  let cleanedJson = jsonText.trim();
+  
+  // Remove markdown code block wrapping if present
+  if (cleanedJson.startsWith('```json')) {
+    cleanedJson = cleanedJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  } else if (cleanedJson.startsWith('```')) {
+    cleanedJson = cleanedJson.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+  
+  // Try to fix common JSON issues
+  try {
+    // Remove any trailing commas before closing brackets/braces
+    cleanedJson = cleanedJson.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Ensure proper array structure
+    if (!cleanedJson.startsWith('[')) {
+      cleanedJson = '[' + cleanedJson + ']';
+    }
+    
+    return JSON.parse(cleanedJson) as Recipe[];
+  } catch (parseError) {
+    console.error('JSON Parse Error:', parseError);
+    console.error('Raw JSON text:', cleanedJson);
+    
+    // Try to extract valid JSON from the response
+    const jsonMatch = cleanedJson.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]) as Recipe[];
+      } catch (secondError) {
+        console.error('Second JSON Parse Error:', secondError);
+        throw new Error('Failed to parse recipe JSON from AI response');
+      }
+    } else {
+      throw new Error('No valid JSON array found in AI response');
+    }
+  }
+}
+
 // Generate personalized recipes with progressive display (one by one as images complete)
 export async function* generatePersonalizedRecipesProgressive(
   userPreferences: UserPreferences,
@@ -133,14 +175,8 @@ Return only the JSON array, no additional text or formatting.
       // Parse the JSON response, handling potential markdown wrapping
       let jsonText = text.trim();
       
-      // Remove markdown code block wrapping if present
-      if (jsonText.startsWith('```json')) {
-        jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (jsonText.startsWith('```')) {
-        jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      }
-      
-      const recipes = JSON.parse(jsonText) as Recipe[];
+      // Use the helper function to safely parse JSON
+      const recipes = parseRecipeJSON(jsonText);
       
       // Process each recipe individually and yield as soon as image is ready
       for (let index = 0; index < recipes.length; index++) {
@@ -290,14 +326,8 @@ Return only the JSON array, no additional text or formatting.
       // Parse the JSON response, handling potential markdown wrapping
       let jsonText = text.trim();
       
-      // Remove markdown code block wrapping if present
-      if (jsonText.startsWith('```json')) {
-        jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (jsonText.startsWith('```')) {
-        jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      }
-      
-      const recipes = JSON.parse(jsonText) as Recipe[];
+      // Use the helper function to safely parse JSON
+      const recipes = parseRecipeJSON(jsonText);
       
       // Validate and ensure each recipe has required fields with AI-generated images
       // Process sequentially to avoid rate limits
