@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth-context";
 import { generatePersonalizedRecipes, generatePersonalizedRecipesProgressive, Recipe, isGeminiAvailable } from "@/lib/gemini-service";
-import { handleRecipeRequest, generateCompliantRecipe, createDietaryConflictFlow } from "@/lib/conversation-service";
+import { handleRecipeRequest, generateCompliantRecipe, createDietaryConflictFlow, clearConversationMemory } from "@/lib/conversation-service";
 import { testFirebaseConnection, testSpecificCollections } from "@/lib/firebase-test";
 import { processRecipeImageUrl } from "@/lib/storage-service";
 import RecipeCard from "@/components/ui/recipe-card";
@@ -706,7 +706,7 @@ export default function DashboardPage() {
     if (user && chatMessages.length === 0) {
       const welcomeMessage: ChatMessage = {
         id: "welcome",
-        text: `Hello! I'm your AI cooking assistant. I can help you with recipes, meal planning, cooking tips, and personalized recommendations. What would you like to cook today?`,
+        text: `Hello! I'm ChefGPT, your warm and enthusiastic AI cooking companion! 👨‍🍳 I'm here to help you discover amazing recipes, learn cooking techniques, and make your culinary journey delightful. What would you like to cook today? ✨`,
         isBot: true,
         timestamp: new Date()
       };
@@ -1010,6 +1010,9 @@ export default function DashboardPage() {
       await autoSaveChatSession(chatMessages);
     }
     
+    // Clear LangChain conversation memory for fresh start
+    await clearConversationMemory();
+    
     // Reset to new chat state
     setCurrentChatId(null);
     setChatMessages([]);
@@ -1018,7 +1021,7 @@ export default function DashboardPage() {
     // Add welcome message for new chat
     const welcomeMessage: ChatMessage = {
       id: "welcome-" + Date.now(),
-      text: `Hello! I'm your AI cooking assistant. I can help you with recipes, meal planning, cooking tips, and personalized recommendations. What would you like to cook today?`,
+      text: `Hello! I'm ChefGPT, your warm and enthusiastic AI cooking companion! 👨‍🍳 I'm here to help you discover amazing recipes, learn cooking techniques, and make your culinary journey delightful. What would you like to cook today? ✨`,
       isBot: true,
       timestamp: new Date()
     };

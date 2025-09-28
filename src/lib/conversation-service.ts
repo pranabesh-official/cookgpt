@@ -7,6 +7,11 @@ import {
   createDietaryCompliantPrompt,
   suggestAlternatives 
 } from './prompt-validation-service';
+import { 
+  langChainConversationService, 
+  LangChainConversationContext, 
+  LangChainResponse 
+} from './langchain-conversation-service';
 
 export interface ConversationContext {
   userPreferences: UserPreferences;
@@ -25,9 +30,85 @@ export interface ConversationResponse {
 }
 
 /**
- * Main conversation handler that validates user requests and provides appropriate responses
+ * Enhanced conversation handler using LangChain for more human-like interactions
  */
 export async function handleRecipeRequest(
+  userPrompt: string,
+  context: ConversationContext
+): Promise<ConversationResponse> {
+  try {
+    // Convert to LangChain context
+    const langChainContext: LangChainConversationContext = {
+      userPreferences: context.userPreferences,
+      chatHistory: context.chatHistory,
+      currentTopic: context.currentTopic,
+      lastRecipeGenerated: context.lastRecipeGenerated,
+    };
+
+    // Try to use server-side LangChain processing first
+    let langChainResponse;
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userMessage: userPrompt,
+          context: langChainContext,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        langChainResponse = data.response;
+      } else {
+        throw new Error('API request failed');
+      }
+    } catch (apiError) {
+      console.log('API route not available, using client-side fallback');
+      // Fallback to client-side processing
+      langChainResponse = await langChainConversationService.processMessage(
+        userPrompt,
+        langChainContext
+      );
+    }
+
+    // If LangChain suggests recipe generation, validate it
+    if (langChainResponse.shouldGenerateRecipe) {
+      const validation = validateRecipeRequest(userPrompt, context.userPreferences);
+      
+      if (validation.isValid) {
+        return {
+          message: langChainResponse.message,
+          shouldGenerateRecipe: true,
+          isEducational: langChainResponse.isEducational
+        };
+      } else {
+        // Handle conflicts with LangChain-enhanced responses
+        return handleConflictWithLangChain(userPrompt, validation, context, langChainResponse);
+      }
+    }
+
+    // Return LangChain response for non-recipe requests
+    return {
+      message: langChainResponse.message,
+      shouldGenerateRecipe: false,
+      isEducational: langChainResponse.isEducational
+    };
+
+  } catch (error) {
+    console.error('Error in enhanced conversation handler:', error);
+    
+    // Fallback to original logic
+    return handleRecipeRequestFallback(userPrompt, context);
+  }
+}
+
+/**
+ * Fallback to original conversation logic if LangChain fails
+ */
+async function handleRecipeRequestFallback(
   userPrompt: string,
   context: ConversationContext
 ): Promise<ConversationResponse> {
@@ -59,6 +140,56 @@ export async function handleRecipeRequest(
         message: "I'd be happy to help you with that recipe!",
         shouldGenerateRecipe: true,
         isEducational: false
+      };
+  }
+}
+
+/**
+ * Handle conflicts with LangChain-enhanced responses
+ */
+function handleConflictWithLangChain(
+  userPrompt: string,
+  validation: PromptValidationResult,
+  context: ConversationContext,
+  langChainResponse: LangChainResponse
+): ConversationResponse {
+  // Use LangChain response as base but add conflict handling
+  const baseMessage = langChainResponse.message;
+  
+  switch (validation.conflictType) {
+    case 'dietary':
+      const dietaryResponse = handleDietaryConflict(userPrompt, validation, context);
+      return {
+        message: `${baseMessage} ${dietaryResponse.message}`,
+        shouldGenerateRecipe: false,
+        alternatives: dietaryResponse.alternatives,
+        conflictType: 'dietary',
+        isEducational: true
+      };
+    
+    case 'cuisine':
+      const cuisineResponse = handleCuisineConflict(userPrompt, validation, context);
+      return {
+        message: `${baseMessage} ${cuisineResponse.message}`,
+        shouldGenerateRecipe: cuisineResponse.shouldGenerateRecipe,
+        conflictType: 'cuisine',
+        isEducational: true
+      };
+    
+    case 'ingredient':
+      const skillResponse = handleSkillConflict(userPrompt, validation, context);
+      return {
+        message: `${baseMessage} ${skillResponse.message}`,
+        shouldGenerateRecipe: skillResponse.shouldGenerateRecipe,
+        conflictType: 'ingredient',
+        isEducational: true
+      };
+    
+    default:
+      return {
+        message: baseMessage,
+        shouldGenerateRecipe: false,
+        isEducational: langChainResponse.isEducational
       };
   }
 }
@@ -253,4 +384,31 @@ export function analyzeConversationContext(
     topicContinuity,
     userIntent
   };
+}
+
+/**
+ * Clear conversation memory for new chat sessions
+ */
+export async function clearConversationMemory(): Promise<void> {
+  try {
+    // Try to use server-side API first
+    const response = await fetch('/api/chat', {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+  } catch (apiError) {
+    console.log('API route not available, using client-side fallback');
+    // Fallback to client-side processing
+    langChainConversationService.clearMemory();
+  }
+}
+
+/**
+ * Get conversation history for debugging
+ */
+export async function getConversationHistory(): Promise<string[]> {
+  return await langChainConversationService.getConversationHistory();
 }

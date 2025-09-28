@@ -71,9 +71,9 @@ export async function* generatePersonalizedRecipesProgressive(
   }
 
   try {
-    // Use gemini-1.5-flash for complex recipe generation
+    // Use gemini-2.5-flash for complex recipe generation
     const model = client.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: {
         temperature: 0.7,
         topP: 0.8,
@@ -228,9 +228,9 @@ export const generatePersonalizedRecipes = async (
   }
 
   try {
-    // Use gemini-1.5-flash for complex recipe generation
+    // Use gemini-2.5-flash for complex recipe generation
     const model = client.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: {
         temperature: 0.7,
         topP: 0.8,
@@ -570,7 +570,7 @@ const generateDetailedImageDescription = async (recipe: Recipe): Promise<string>
 
   try {
     const model = client.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 300,
