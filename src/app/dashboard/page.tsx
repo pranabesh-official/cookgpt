@@ -259,7 +259,23 @@ function RecipeModal({ recipe, isOpen, onClose, onSave }: RecipeModalProps) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, userPreferences, signOut, loading } = useAuth();
+  
+  // Safe auth hook usage with fallback
+  let user, userPreferences, signOut, loading;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    userPreferences = auth.userPreferences;
+    signOut = auth.signOut;
+    loading = auth.loading;
+  } catch (error) {
+    console.log('🔧 Auth hook error, using fallback values:', error);
+    user = null;
+    userPreferences = null;
+    signOut = () => Promise.resolve();
+    loading = false;
+  }
+  
   const isMobile = useIsMobile();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
@@ -282,32 +298,35 @@ export default function DashboardPage() {
     setHasMounted(true);
   }, []);
 
-  // Handle static export fallback
-  const [useStaticFallback, setUseStaticFallback] = useState(false);
+  // Handle static export fallback - default to true for static export
+  const [useStaticFallback, setUseStaticFallback] = useState(true);
   
-  // Redirect if not authenticated, but allow static fallback
-  const hasRedirected = useRef(false);
+  // Check if Firebase is available and user is authenticated
   useEffect(() => {
     if (!hasMounted) return; // Wait for client-side mounting
-    if (hasRedirected.current) return;
     
-    // Check if we're in static export mode (no Firebase auth available)
-    if (typeof window !== 'undefined' && !loading && !user) {
-      // Try to detect if Firebase is available
+    // Check if Firebase is available and user is authenticated
+    if (user && !loading) {
+      console.log('🔧 User authenticated, switching to full dashboard');
+      setUseStaticFallback(false);
+    } else if (!loading && !user) {
+      // Check if Firebase is available
       try {
-        // If Firebase auth is not available, use static fallback
-        if (!(window as any).firebase) {
+        const hasFirebase = !!(window as any).firebase || 
+                           !!(window as any).firebaseConfig ||
+                           typeof (window as any).firebase !== 'undefined';
+        
+        if (hasFirebase) {
+          console.log('🔧 Firebase detected but no user, redirecting to login');
+          router.replace("/");
+        } else {
+          console.log('🔧 No Firebase detected, using static fallback');
           setUseStaticFallback(true);
-          return;
         }
       } catch (error) {
+        console.log('🔧 Firebase detection error, using static fallback:', error);
         setUseStaticFallback(true);
-        return;
       }
-      
-      // If Firebase is available but no user, redirect to login
-      hasRedirected.current = true;
-      router.replace("/");
     }
   }, [user, loading, router, hasMounted]);
 
@@ -1231,6 +1250,7 @@ export default function DashboardPage() {
 
   // Show static fallback if Firebase auth is not available
   if (useStaticFallback) {
+    console.log('🔧 Rendering static fallback dashboard');
     return <StaticDashboardFallback />;
   }
 
