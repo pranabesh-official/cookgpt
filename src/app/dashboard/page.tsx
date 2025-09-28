@@ -59,7 +59,8 @@ import {
   Eye,
   FolderOpen,
   Filter,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Brain
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -1270,6 +1271,13 @@ export default function DashboardPage() {
                   <User className="w-4 h-4 mr-2" />
                   Profile
                 </DropdownMenuItem>
+                <Link href="/smart-dashboard">
+                  <DropdownMenuItem>
+                    <Brain className="w-4 h-4 mr-2" />
+                    Smart Dashboard
+                    <Badge variant="secondary" className="ml-auto text-xs">AI</Badge>
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem onClick={() => setSidebarTab('recipes')}>
                   <BookOpen className="w-4 h-4 mr-2" />
                   Saved Recipes
