@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - master
+      - beta
   pull_request:
     branches:
       - main
       - master
+      - beta
 
 jobs:
   build-and-deploy:
