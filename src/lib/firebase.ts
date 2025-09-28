@@ -1,9 +1,8 @@
-// Import the functions you need from the SDKs you need
+// Import only the core app statically; dynamically import other SDKs in the browser
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
-import { getStorage, type FirebaseStorage } from "firebase/storage";
+import type { Auth } from "firebase/auth";
+import type { Firestore } from "firebase/firestore";
+import type { FirebaseStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -22,28 +21,37 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Analytics only in browser environment
-let analytics: ReturnType<typeof getAnalytics> | null = null;
+// Lazy-initialized Firebase clients (browser-only)
 let auth: Auth | null = null;
-let googleProvider: GoogleAuthProvider | null = null;
+let googleProvider: any | null = null;
 let db: Firestore | null = null;
 let storage: FirebaseStorage | null = null;
 
 if (typeof window !== "undefined") {
-  try {
-    analytics = getAnalytics(app);
-  } catch {
-    // no-op if analytics not available (SSR or blocked)
-  }
-  try {
-    auth = getAuth(app);
-    googleProvider = new GoogleAuthProvider();
-    db = getFirestore(app);
-    storage = getStorage(app);
-  } catch {
-    // no-op in SSR
-  }
+  // Dynamically import to avoid bundling server-incompatible modules in the client during HMR
+  import("firebase/auth").then(({ getAuth, GoogleAuthProvider }) => {
+    try {
+      auth = getAuth(app);
+      googleProvider = new GoogleAuthProvider();
+    } catch {
+      // ignore
+    }
+  });
+  import("firebase/firestore").then(({ getFirestore }) => {
+    try {
+      db = getFirestore(app);
+    } catch {
+      // ignore
+    }
+  });
+  import("firebase/storage").then(({ getStorage }) => {
+    try {
+      storage = getStorage(app);
+    } catch {
+      // ignore
+    }
+  });
 }
 
-export { app, analytics, auth, googleProvider, db, storage };
+export { app, auth, googleProvider, db, storage };
 export default app;

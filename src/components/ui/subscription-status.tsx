@@ -7,11 +7,13 @@ import {
   getUpgradeMessage
 } from "@/lib/subscription";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Crown, Star, Zap } from "lucide-react";
 
 export default function SubscriptionStatus() {
+  const router = useRouter();
   const { user } = useAuth();
   const tier = getUserSubscriptionTier(user);
   const plan = SUBSCRIPTION_PLANS[tier];
@@ -85,7 +87,7 @@ export default function SubscriptionStatus() {
             <p className="text-sm text-muted-foreground mb-3">
               {getUpgradeMessage(user)}
             </p>
-            <Button className="w-full" size="sm">
+            <Button className="w-full" size="sm" onClick={() => router.push('/subscription')}>
               Upgrade to {tier === 'free' ? 'Basic' : 'Pro'}
             </Button>
           </div>

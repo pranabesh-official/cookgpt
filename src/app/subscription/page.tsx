@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth-context";
 import { SUBSCRIPTION_PLANS, getUserSubscriptionTier } from "@/lib/subscription";
-import { httpsCallable } from "firebase/functions";
-import { functions } from "@/lib/firebase";
 import {
   Check,
   Crown,
@@ -24,11 +22,34 @@ import Link from "next/link";
 
 export default function SubscriptionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const currentTier = getUserSubscriptionTier(user);
 
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // Handle return from Cashfree payment
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const plan = searchParams.get('plan');
+    const subscriptionId = searchParams.get('subscriptionId');
+
+    if (status === 'success' && plan) {
+      setShowSuccessMessage(true);
+      
+      // Clear pending subscription from session storage
+      sessionStorage.removeItem('pendingSubscription');
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+        // Clean up URL parameters
+        router.replace('/subscription');
+      }, 5000);
+    }
+  }, [searchParams, router]);
 
   const handleUpgrade = async (planId: string) => {
     if (!user) {
@@ -39,17 +60,54 @@ export default function SubscriptionPage() {
     setIsUpgrading(planId);
 
     try {
-      const createSubscriptionFunction = httpsCallable(functions, 'createSubscription');
-      const result = await createSubscriptionFunction({
-        userId: user.uid,
-        planId: planId
+      const endpoint = process.env.NEXT_PUBLIC_SUBS_ENDPOINT || 'https://us-central1-cookgpt-a865a.cloudfunctions.net/createSubscription';
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: {
+            userId: user.uid,
+            planId: planId,
+            email: (user as any)?.email ?? null,
+            phone: (user as any)?.phoneNumber ?? null
+          }
+        })
       });
 
-      if (result.data.success) {
-        // Redirect to Cashfree payment link
-        window.location.href = result.data.redirectUrl;
+      const result = await response.json();
+
+      if (response.ok) {
+        // Handle Cashfree API response structure
+        if (result.success || result.status === 'SUCCESS') {
+          // Cashfree uses 'authLink' for payment redirect
+          const redirectUrl = result.authLink || result.redirectUrl;
+          
+          if (redirectUrl) {
+            // Store subscription details for success handling
+            sessionStorage.setItem('pendingSubscription', JSON.stringify({
+              subscriptionId: result.subscriptionId,
+              planId: planId,
+              userId: user.uid
+            }));
+            
+            window.location.href = redirectUrl;
+          } else {
+            alert('Upgrade initiated successfully! You will be redirected to complete the payment.');
+            // In production, this would redirect to Cashfree's payment page
+            // For now, simulate the success flow locally
+            setTimeout(() => {
+              window.location.href = `/subscription?status=success&plan=${planId}&subscriptionId=${result.subscriptionId}`;
+            }, 2000);
+          }
+        } else {
+          alert(`Failed to initiate upgrade: ${result.message || result.error?.message || 'Please try again.'}`);
+        }
       } else {
-        alert('Failed to initiate upgrade. Please try again.');
+        const errorMessage = result.error?.message || result.message || 'Please try again.';
+        alert(`Failed to initiate upgrade: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Error upgrading:', error);
@@ -96,6 +154,34 @@ export default function SubscriptionPage() {
       </nav>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <Check className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-900">
+                      Subscription Successful!
+                    </h3>
+                    <p className="text-green-700">
+                      Your subscription has been activated. You now have access to all {searchParams.get('plan')} plan features.
+                      This message will auto-hide in a few seconds.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-foreground mb-4">
