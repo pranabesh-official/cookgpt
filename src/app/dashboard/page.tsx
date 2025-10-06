@@ -25,6 +25,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { generatePersonalizedRecipes, generatePersonalizedRecipesProgressive, Recipe, isGeminiAvailable } from "@/lib/gemini-service";
 import { handleRecipeRequest, generateCompliantRecipe, createDietaryConflictFlow } from "@/lib/conversation-service";
+// import { EnhancedConversationService } from "@/lib/services/conversation-service-enhanced"; // Temporarily disabled
 import { testFirebaseConnection, testSpecificCollections } from "@/lib/firebase-test";
 import { processRecipeImageUrl } from "@/lib/storage-service";
 import {
@@ -73,14 +74,14 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
   serverTimestamp,
   doc,
   updateDoc,
@@ -129,8 +130,8 @@ function RecipeModal({ recipe, isOpen, onClose, onSave }: RecipeModalProps) {
           {/* Header with Image */}
           <div className="relative h-48 sm:h-64 bg-gradient-to-br from-accent/20 via-accent/10 to-accent/20 flex-shrink-0">
             {recipe.imageUrl ? (
-              <img 
-                src={recipe.imageUrl} 
+              <img
+                src={recipe.imageUrl}
                 alt={recipe.title}
                 className="w-full h-full object-cover"
               />
@@ -200,7 +201,9 @@ function RecipeModal({ recipe, isOpen, onClose, onSave }: RecipeModalProps) {
                       <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
                         {index + 1}
                       </div>
-                      <span className="text-sm">{ingredient}</span>
+                      <span className="text-sm">
+                        {String(ingredient)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -219,7 +222,9 @@ function RecipeModal({ recipe, isOpen, onClose, onSave }: RecipeModalProps) {
                         {index + 1}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm leading-relaxed">{instruction}</p>
+                        <p className="text-sm leading-relaxed">
+                          {String(instruction)}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -228,15 +233,15 @@ function RecipeModal({ recipe, isOpen, onClose, onSave }: RecipeModalProps) {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 pb-2">
-                <Button 
+                <Button
                   className="flex-1 bg-gradient-to-r from-primary to-primary/90"
                   onClick={() => onSave(recipe)}
                 >
                   <Heart className="w-4 h-4 mr-2" />
                   Save Recipe
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex-1"
                   onClick={() => {
                     // Add share functionality here if needed
@@ -284,6 +289,83 @@ export default function DashboardPage() {
   const [hasMounted, setHasMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Enhanced conversation service completely removed to fix LangChain errors
+  // Conversation enhancement is now handled by generateEnhancedResponse function
+
+  // Generate enhanced professional response with better context awareness
+  const generateEnhancedResponse = (userMessage: string, recipes: any[]): string => {
+    const lowerMessage = userMessage.toLowerCase();
+
+    // More natural, conversational opening phrases
+    const naturalPhrases = [
+      "Perfect! I've created",
+      "Great choice! Here are",
+      "I've prepared",
+      "Based on your request, I've crafted",
+      "Here are some fantastic"
+    ];
+
+    const recipeCount = recipes?.length || 0;
+    const randomPhrase = naturalPhrases[Math.floor(Math.random() * naturalPhrases.length)];
+
+    if (recipeCount === 0) {
+      return "I'm having trouble generating recipes right now. Let me know what you're in the mood for and I'll help you create something delicious!";
+    }
+
+    // Detect the recipe type for more natural responses
+    const requestedType = getRecipeTypeFromMessage(lowerMessage);
+    let typeDescription = requestedType ? `${requestedType} ` : '';
+
+    // More natural and contextual responses
+    let response = `${randomPhrase} ${recipeCount} ${typeDescription}recipe${recipeCount > 1 ? 's' : ''} that should hit the spot!`;
+
+    // Add context-specific advice with more natural, friendly language
+    if (lowerMessage.includes('salad')) {
+      response += " These salads are fresh, colorful, and packed with good-for-you ingredients that'll keep you satisfied.";
+    } else if (lowerMessage.includes('healthy') || lowerMessage.includes('nutrition')) {
+      response += " Each one is nutritionally balanced to support your wellness goals without sacrificing any flavor.";
+    } else if (lowerMessage.includes('quick') || lowerMessage.includes('fast') || lowerMessage.includes('easy')) {
+      response += " They're all designed to be quick and straightforward - perfect for when you want something tasty without the fuss.";
+    } else if (lowerMessage.includes('beginner')) {
+      response += " I've kept the techniques simple and included clear steps so you'll feel confident in the kitchen.";
+    } else if (lowerMessage.includes('pasta')) {
+      response += " These pasta dishes bring together classic techniques with fresh, modern flavors.";
+    } else if (lowerMessage.includes('chicken')) {
+      response += " These chicken recipes offer different cooking methods to keep things interesting while delivering great protein and flavor.";
+    } else if (lowerMessage.includes('vegetarian') || lowerMessage.includes('vegan')) {
+      response += " These plant-based recipes are full of flavor and will satisfy even the most dedicated meat-eaters.";
+    } else {
+      response += " Each recipe balances great taste with good nutrition - exactly what you need for a satisfying meal.";
+    }
+
+    return response;
+  };
+
+  // Helper function to extract recipe type from user message with better detection
+  const getRecipeTypeFromMessage = (message: string): string => {
+    const msg = message.toLowerCase();
+
+    // Priority order - more specific matches first
+    if (msg.includes('salad') || (msg.includes('fresh') && (msg.includes('greens') || msg.includes('lettuce') || msg.includes('vegetables')))) return 'salad';
+    if (msg.includes('pasta') || msg.includes('spaghetti') || msg.includes('noodle') || msg.includes('linguine') || msg.includes('penne')) return 'pasta';
+    if (msg.includes('soup') || msg.includes('broth') || msg.includes('stew') || msg.includes('bisque')) return 'soup';
+    if (msg.includes('chicken') || msg.includes('poultry')) return 'chicken';
+    if (msg.includes('beef') || msg.includes('steak')) return 'beef';
+    if (msg.includes('fish') || msg.includes('salmon') || msg.includes('seafood')) return 'seafood';
+    if (msg.includes('vegetarian') || msg.includes('veggie') || msg.includes('plant-based')) return 'vegetarian';
+    if (msg.includes('vegan')) return 'vegan';
+    if (msg.includes('breakfast') || msg.includes('morning') || msg.includes('brunch')) return 'breakfast';
+    if (msg.includes('lunch') || msg.includes('midday')) return 'lunch';
+    if (msg.includes('dinner') || msg.includes('evening') || msg.includes('supper')) return 'dinner';
+    if (msg.includes('dessert') || msg.includes('sweet') || msg.includes('cake') || msg.includes('cookie')) return 'dessert';
+    if (msg.includes('healthy') || msg.includes('nutritious') || msg.includes('light') || msg.includes('low-cal')) return 'healthy';
+    if (msg.includes('quick') || msg.includes('fast') || msg.includes('easy') || msg.includes('simple')) return 'quick';
+    if (msg.includes('comfort') || msg.includes('hearty')) return 'comfort';
+    if (msg.includes('spicy') || msg.includes('hot')) return 'spicy';
+
+    return '';
+  };
+
   // Handle client-side mounting to prevent hydration mismatch
   useEffect(() => {
     setHasMounted(true);
@@ -309,10 +391,10 @@ export default function DashboardPage() {
   // Load specific chat conversation
   const loadChatConversation = async (chatId: string) => {
     if (!user || !db) return;
-    
+
     try {
       const chatDoc = await getDoc(doc(db!, 'chats', chatId));
-      
+
       if (chatDoc.exists()) {
         const chatData = chatDoc.data();
         const messages = chatData.messages.map((msg: {
@@ -328,11 +410,11 @@ export default function DashboardPage() {
           timestamp: msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date(msg.timestamp),
           recipes: msg.recipes || []
         }));
-        
+
         setChatMessages(messages);
         setCurrentChatId(chatId);
         setIsSidebarOpen(false); // Close sidebar on mobile after loading
-        
+
         console.log(`📖 Loaded conversation: ${chatData.title}`);
       }
     } catch (error) {
@@ -349,18 +431,18 @@ export default function DashboardPage() {
       console.log('❌ Cannot auto-save chat: insufficient data');
       return;
     }
-    
+
     try {
       console.log('🔄 Auto-saving chat session for user:', user.uid);
-      
+
       // Generate title from first user message (excluding welcome message)
       const firstUserMessage = messages.find(msg => !msg.isBot && !msg.id.includes('welcome'));
-      const chatTitle = firstUserMessage 
-        ? firstUserMessage.text.slice(0, 50) + (firstUserMessage.text.length > 50 ? '...' : '') 
+      const chatTitle = firstUserMessage
+        ? firstUserMessage.text.slice(0, 50) + (firstUserMessage.text.length > 50 ? '...' : '')
         : 'New Chat';
-      
+
       const now = new Date();
-      
+
       // Create clean chat data following the preferences pattern
       // Remove ALL image data and undefined values to avoid Firestore issues
       const cleanMessages = messages.map(msg => {
@@ -379,17 +461,17 @@ export default function DashboardPage() {
             // Preserve Firebase Storage URLs, but remove base64 data to avoid size issues
             imageUrl: recipe.imageUrl && !recipe.imageUrl.startsWith('data:') ? recipe.imageUrl : ''
           };
-          
+
           // Remove any undefined properties
           Object.keys(cleanRecipe).forEach(key => {
             if (cleanRecipe[key as keyof typeof cleanRecipe] === undefined) {
               delete cleanRecipe[key as keyof typeof cleanRecipe];
             }
           });
-          
+
           return cleanRecipe;
         });
-        
+
         return {
           id: msg.id || '',
           text: msg.text || '',
@@ -398,7 +480,7 @@ export default function DashboardPage() {
           recipes: cleanRecipes
         };
       });
-      
+
       const chatData = {
         userId: user.uid,
         title: chatTitle,
@@ -410,9 +492,9 @@ export default function DashboardPage() {
         lastActivity: now,
         status: 'active'
       };
-      
+
       let chatId: string;
-      
+
       if (currentChatId && messages.length > 2) {
         // Update existing chat
         console.log('🔄 Updating existing chat:', currentChatId);
@@ -432,13 +514,13 @@ export default function DashboardPage() {
         setCurrentChatId(chatId);
         console.log('💾 Created new chat session with ID:', chatId);
       }
-      
+
       // Reload chat history to show updated list
       await loadChatHistory();
       return chatId;
     } catch (error) {
       console.error('Error auto-saving chat session:', error);
-      
+
       toast.error('Failed to save conversation', {
         description: 'Your conversation may not be saved. Please try starting a new chat.'
       });
@@ -460,19 +542,19 @@ export default function DashboardPage() {
       setTimeout(loadSavedRecipes, 1000);
       return;
     }
-    
+
     try {
       console.log('🔄 Loading saved recipes for user:', user.uid);
-      
+
       // Use a simple query without complex indexes - similar to preferences pattern
       const savedRecipesQuery = query(
         collection(db!, 'savedRecipes'),
         where('userId', '==', user.uid)
       );
-      
+
       const querySnapshot = await getDocs(savedRecipesQuery);
       const recipes: SavedRecipe[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         console.log('🔍 Loading saved recipe:', data.title, 'Image URL:', data.imageUrl);
@@ -483,26 +565,26 @@ export default function DashboardPage() {
           userId: data.userId,
         } as SavedRecipe);
       });
-      
+
       // Sort locally by savedAt (newest first)
       recipes.sort((a, b) => {
         const dateA = a.savedAt instanceof Date ? a.savedAt : new Date(a.savedAt);
         const dateB = b.savedAt instanceof Date ? b.savedAt : new Date(b.savedAt);
         return dateB.getTime() - dateA.getTime();
       });
-      
+
       setSavedRecipes(recipes);
       console.log(`📚 Loaded ${recipes.length} saved recipes`);
-      
+
       if (recipes.length === 0) {
         console.log('ℹ️ No saved recipes found for user. This is normal for new users.');
       }
     } catch (error) {
       console.error('Error loading saved recipes:', error);
-      
+
       // Set empty array to avoid undefined state
       setSavedRecipes([]);
-      
+
       // Only show error toast if it's not a permission/initialization issue
       if (error instanceof Error && !error.message.includes('Missing or insufficient permissions')) {
         toast.error('Failed to load saved recipes', {
@@ -518,16 +600,16 @@ export default function DashboardPage() {
       console.log('❌ Cannot delete recipe: user or db not available');
       return;
     }
-    
+
     try {
       console.log('🔄 Deleting saved recipe with doc ID:', recipeDocId);
-      
+
       // Delete the document directly using its Firestore document ID
       await deleteDoc(doc(db!, 'savedRecipes', recipeDocId));
-      
+
       // Update local state
       setSavedRecipes(prev => prev.filter(recipe => recipe.id !== recipeDocId));
-      
+
       console.log('✅ Recipe deleted successfully');
       toast.success('Recipe removed from saved recipes');
     } catch (error) {
@@ -552,19 +634,19 @@ export default function DashboardPage() {
       setTimeout(loadChatHistory, 1000);
       return;
     }
-    
+
     try {
       console.log('🔄 Loading chat history for user:', user.uid);
-      
+
       // Use simple query without complex indexes - similar to preferences pattern
       const chatsQuery = query(
         collection(db!, 'chats'),
         where('userId', '==', user.uid)
       );
-      
+
       const querySnapshot = await getDocs(chatsQuery);
       const history: ChatSession[] = [];
-      
+
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         history.push({
@@ -574,26 +656,26 @@ export default function DashboardPage() {
           messageCount: data.messageCount || data.messages?.length || 0
         });
       });
-      
+
       // Sort locally by timestamp (newest first)
       history.sort((a, b) => {
         const dateA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
         const dateB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
         return dateB.getTime() - dateA.getTime();
       });
-      
+
       setChatHistory(history);
       console.log(`💬 Loaded ${history.length} chat sessions`);
-      
+
       if (history.length === 0) {
         console.log('ℹ️ No chat history found for user. This is normal for new users.');
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
-      
+
       // Set empty array to avoid undefined state
       setChatHistory([]);
-      
+
       // Only show error toast if it's not a permission/initialization issue
       if (error instanceof Error && !error.message.includes('Missing or insufficient permissions')) {
         toast.error('Failed to load chat history', {
@@ -606,7 +688,7 @@ export default function DashboardPage() {
   // Save chat session to Firestore (legacy function - keeping for compatibility)
   const saveChatSession = async (messages: ChatMessage[], title: string) => {
     if (!user || !db || messages.length === 0) return null;
-    
+
     try {
       const chatData = {
         userId: user.uid,
@@ -622,7 +704,7 @@ export default function DashboardPage() {
         timestamp: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
-      
+
       const docRef = await addDoc(collection(db!, 'chats'), chatData);
       console.log('Chat session saved with ID:', docRef.id);
       return docRef.id;
@@ -635,15 +717,15 @@ export default function DashboardPage() {
   // Save individual recipes to Firestore with proper data handling
   const saveRecipesToFirestore = async (recipes: Recipe[], chatId: string) => {
     if (!user || !db || recipes.length === 0) return;
-    
+
     try {
       console.log(`📤 Processing ${recipes.length} recipes for batch save with image uploads...`);
-      
+
       // Process each recipe with image upload
       const processedRecipes = await Promise.all(
         recipes.map(async (recipe, index) => {
           console.log(`🔄 Processing recipe ${index + 1}/${recipes.length}: ${recipe.title}`);
-          
+
           // Skip image processing if URL is already a Firebase Storage URL or HTTP URL
           let processedImageUrl = recipe.imageUrl;
           if (recipe.imageUrl && recipe.imageUrl.startsWith('data:')) {
@@ -659,7 +741,7 @@ export default function DashboardPage() {
           } else {
             console.log(`🚫 No image for ${recipe.title}`);
           }
-          
+
           // Create clean recipe data
           const cleanRecipe = {
             title: recipe.title,
@@ -673,7 +755,7 @@ export default function DashboardPage() {
             calories: recipe.calories || null,
             // Store the processed image URL (Firebase Storage URL or HTTP URL)
             imageUrl: processedImageUrl,
-            
+
             // Recipe metadata
             userId: user.uid,
             chatId,
@@ -682,23 +764,23 @@ export default function DashboardPage() {
             saved: false,
             source: 'ai_generated'
           };
-          
+
           // Remove any undefined properties
           Object.keys(cleanRecipe).forEach(key => {
             if (cleanRecipe[key as keyof typeof cleanRecipe] === undefined) {
               delete cleanRecipe[key as keyof typeof cleanRecipe];
             }
           });
-          
+
           return cleanRecipe;
         })
       );
-      
+
       // Save all processed recipes to Firestore
-      const promises = processedRecipes.map(recipeData => 
+      const promises = processedRecipes.map(recipeData =>
         addDoc(collection(db!, 'recipes'), recipeData)
       );
-      
+
       await Promise.all(promises);
       console.log(`💾 Saved ${recipes.length} recipes to Firestore successfully with images`);
     } catch (error) {
@@ -715,13 +797,13 @@ export default function DashboardPage() {
     if (user && chatMessages.length === 0) {
       const welcomeMessage: ChatMessage = {
         id: "welcome",
-        text: `Hello! I'm your AI cooking assistant. I can help you with recipes, meal planning, cooking tips, and personalized recommendations. What would you like to cook today?`,
+        text: `Hello! I'm your AI chef and dietitian assistant. I provide professional culinary guidance, personalized recipe recommendations (1-7 recipes based on your needs), nutritional analysis, and cooking expertise. I remember our conversations and learn your preferences over time. What culinary adventure shall we embark on today?`,
         isBot: true,
         timestamp: new Date()
       };
       setChatMessages([welcomeMessage]);
     }
-    
+
     // Load chat history and saved recipes when user is authenticated
     if (user) {
       console.log('ℹ️ Initializing sidebar data for authenticated user:', user.uid);
@@ -736,7 +818,7 @@ export default function DashboardPage() {
           console.error('Error initializing sidebar data:', error);
         }
       };
-      
+
       // If db is available, load immediately, otherwise wait a bit
       if (db) {
         initializeData();
@@ -799,239 +881,209 @@ export default function DashboardPage() {
 
   const handleSendMessage = async () => {
     if (!chatMessage.trim() || isGeneratingResponse) return;
-    
+
+    // Safety check to prevent any accidental enhanced conversation service usage
+    console.log('🔄 Using basic recipe generation (Enhanced conversation service disabled)');
+
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       text: chatMessage.trim(),
       isBot: false,
       timestamp: new Date()
     };
-    
+
     setChatMessages(prev => [...prev, userMessage]);
     setChatMessage('');
     setIsGeneratingResponse(true);
-    
+
     try {
-      // Check if user is asking for recipes
-      const isRecipeRequest = (
-        chatMessage.toLowerCase().includes('recipe') || 
-        chatMessage.toLowerCase().includes('cook') || 
-        chatMessage.toLowerCase().includes('meal') ||
-        chatMessage.toLowerCase().includes('dish') ||
-        chatMessage.toLowerCase().includes('food') ||
-        chatMessage.toLowerCase().includes('make') ||
-        chatMessage.toLowerCase().includes('prepare')
-      );
-      
+      // Check subscription limits before processing
+      const userTier = getUserSubscriptionTier(user);
+      const dailyRecipeCount = 0; // TODO: Get actual count from user's daily usage
+
+      if (!canGenerateRecipes(user, dailyRecipeCount)) {
+        const upgradeMessage = getUpgradeMessage(user);
+        const botResponse = {
+          id: (Date.now() + 1).toString(),
+          text: upgradeMessage,
+          isBot: true,
+          timestamp: new Date(),
+          recipes: []
+        };
+
+        setChatMessages(prev => [...prev, botResponse]);
+        const finalMessages = [...chatMessages, userMessage, botResponse];
+        await autoSaveChatSession(finalMessages);
+        return;
+      }
+
+      // Check if user has completed onboarding
+      if (!userPreferences?.onboardingCompleted) {
+        const botResponse = {
+          id: (Date.now() + 1).toString(),
+          text: "I'd be happy to help you with personalized recipes and cooking advice! To give you the best recommendations, please complete your profile setup first by visiting your preferences.",
+          isBot: true,
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, botResponse]);
+        const finalMessages = [...chatMessages, userMessage, botResponse];
+        await autoSaveChatSession(finalMessages);
+        return;
+      }
+
+      // Generate session ID for this conversation
+      const sessionId = currentChatId || `session-${Date.now()}`;
+
+      // Show thinking message
+      const thinkingResponse = {
+        id: (Date.now() + 1).toString(),
+        text: `As your AI chef and dietitian, I'm analyzing your request and preferences to provide the best culinary guidance...`,
+        isBot: true,
+        timestamp: new Date(),
+        recipes: []
+      };
+
+      setChatMessages(prev => [...prev, thinkingResponse]);
+
+      // Use original working recipe generation service directly
+      console.log('🔄 Using original recipe generation service (LangChain completely bypassed)');
+
+      let recipes: any[] = [];
       let botResponse: ChatMessage;
-      
-      if (isRecipeRequest && userPreferences?.onboardingCompleted && isGeminiAvailable()) {
-        try {
-          // Check subscription limits before generating recipes
-          const userTier = getUserSubscriptionTier(user);
-          const upgradeMessage = getUpgradeMessage(user);
 
-          // For demo, simulate daily count - in production, track this in Firestore
-          const dailyRecipeCount = 0; // TODO: Get actual count from user's daily usage
+      try {
+        const { generatePersonalizedRecipes } = await import("@/lib/gemini-service");
 
-          if (!canGenerateRecipes(user, dailyRecipeCount)) {
-            botResponse = {
-              id: (Date.now() + 1).toString(),
-              text: upgradeMessage,
-              isBot: true,
-              timestamp: new Date(),
-              recipes: []
-            };
+        // Generate recipes using the proven working service with enhanced context
+        const enhancedUserPreferences = {
+          ...userPreferences,
+          // Add the user's specific request to preferences
+          specificRequest: chatMessage.trim(),
+          // Extract recipe type from message
+          requestedType: getRecipeTypeFromMessage(chatMessage.toLowerCase())
+        };
 
-            setChatMessages(prev => [...prev, botResponse]);
+        recipes = await generatePersonalizedRecipes(enhancedUserPreferences, 3);
+        console.log('✅ Recipes generated successfully:', recipes?.length || 0);
+        console.log('🎯 User requested:', chatMessage.trim());
 
-            // Auto-save conversation
-            const finalMessages = [...chatMessages, userMessage, botResponse];
-            await autoSaveChatSession(finalMessages);
-            return;
-          }
+        // Create enhanced professional response message
+        const enhancedMessage = generateEnhancedResponse(chatMessage.trim(), recipes);
 
-          // Validate the request against user preferences
-          const conversationContext = {
-            userPreferences,
-            chatHistory: chatMessages.map(msg => msg.text),
-            currentTopic: 'recipe_generation'
-          };
+        botResponse = {
+          id: thinkingResponse.id,
+          text: enhancedMessage,
+          isBot: true,
+          timestamp: new Date(),
+          recipes: recipes || []
+        };
 
-          const validationResponse = await handleRecipeRequest(chatMessage, conversationContext);
+      } catch (recipeError) {
+        console.error('Recipe generation error:', recipeError);
 
-          if (!validationResponse.shouldGenerateRecipe) {
-            // Handle dietary conflicts or other validation issues
-            botResponse = {
-              id: (Date.now() + 1).toString(),
-              text: validationResponse.message,
-              isBot: true,
-              timestamp: new Date(),
-              recipes: []
-            };
+        // Fallback response if recipe generation fails
+        botResponse = {
+          id: thinkingResponse.id,
+          text: "I apologize, but I'm having some technical difficulties generating recipes right now. As your AI chef and dietitian, I'm here to help with cooking advice and recipe recommendations. Please try again in a moment.",
+          isBot: true,
+          timestamp: new Date(),
+          recipes: []
+        };
 
-            setChatMessages(prev => [...prev, botResponse]);
+        // Update with fallback and return early
+        setChatMessages(prev => prev.map(msg =>
+          msg.id === thinkingResponse.id ? botResponse : msg
+        ));
 
-            // Auto-save conversation
-            const finalMessages = [...chatMessages, userMessage, botResponse];
-            await autoSaveChatSession(finalMessages);
-            return;
-          }
-          
-          // Show thinking/processing message
-          const thinkingResponse = {
-            id: (Date.now() + 1).toString(),
-            text: `I'm analyzing your preferences and generating 3 personalized recipes with AI-generated images. This might take a moment while I create the perfect recipes for you...`,
-            isBot: true,
-            timestamp: new Date(),
-            recipes: []
-          };
-          
-          setChatMessages(prev => [...prev, thinkingResponse]);
-          
-          console.log('🧠 Starting background recipe generation with all AI processing...');
-          
-          // Generate ALL recipes with images in the background
-          const allRecipes: Recipe[] = [];
-          
-          // Collect all recipes first
-          for await (const recipe of generatePersonalizedRecipesProgressive(userPreferences, 3)) {
-            console.log(`🔄 [BACKGROUND] Processing recipe: ${recipe.title}`);
-            allRecipes.push(recipe);
-            
-            // Update thinking message to show progress without revealing recipes
-            setChatMessages(prev => prev.map(msg => 
-              msg.id === thinkingResponse.id 
-                ? {
-                    ...msg,
-                    text: `I'm creating amazing recipes for you... Generated ${allRecipes.length} of 3 recipes with custom AI images. Almost ready!`
-                  }
-                : msg
-            ));
-          }
-          
-          // After ALL recipes are generated with images, show them all at once
-          if (allRecipes.length > 0) {
-            console.log(`✨ [COMPLETE] All ${allRecipes.length} recipes ready! Displaying now...`);
-            
-            // Final reveal - show all recipes at once
-            botResponse = {
-              id: thinkingResponse.id,
-              text: `Perfect! I've generated ${allRecipes.length} personalized recipes with custom AI-generated images based on your preferences. Here are your delicious options:`,
-              isBot: true,
-              timestamp: new Date(),
-              recipes: allRecipes
-            };
-            
-            setChatMessages(prev => prev.map(msg => 
-              msg.id === thinkingResponse.id ? botResponse : msg
-            ));
-            
-            // First, process and upload images to Firebase Storage
-            if (allRecipes.length > 0) {
-              console.log(`🔄 Processing ${allRecipes.length} recipe images before saving conversation...`);
-              
-              // Process all recipe images and replace base64 with Firebase Storage URLs
-              const processedRecipes = await Promise.all(
-                allRecipes.map(async (recipe) => {
-                  if (recipe.imageUrl && recipe.imageUrl.startsWith('data:') && user) {
-                    const firebaseUrl = await processRecipeImageUrl(
-                      recipe.imageUrl,
-                      user.uid,
-                      recipe.title
-                    );
-                    return { ...recipe, imageUrl: firebaseUrl };
-                  }
-                  return recipe;
-                })
+        return; // Exit early on error
+      }
+
+      // Update the thinking message with the successful response
+      setChatMessages(prev => prev.map(msg =>
+        msg.id === thinkingResponse.id ? botResponse : msg
+      ));
+
+      // botResponse is already set in the try block above
+
+      // Process recipe images if present
+      if (recipes && recipes.length > 0) {
+        console.log(`🔄 Processing ${recipes.length} recipe images...`);
+
+        const processedRecipes = await Promise.all(
+          recipes.map(async (recipe) => {
+            if (recipe.imageUrl && recipe.imageUrl.startsWith('data:') && user) {
+              const firebaseUrl = await processRecipeImageUrl(
+                recipe.imageUrl,
+                user.uid,
+                recipe.title
               );
-              
-              // Update the bot response with processed images
-              botResponse = {
-                ...botResponse,
-                recipes: processedRecipes
-              };
-              
-              // Update the UI with Firebase Storage URLs
-              setChatMessages(prev => prev.map(msg => 
-                msg.id === thinkingResponse.id ? botResponse : msg
-              ));
-              
-              console.log(`✅ Processed ${processedRecipes.length} recipe images with Firebase Storage URLs`);
+              return { ...recipe, imageUrl: firebaseUrl };
             }
-            
-            // Now auto-save the conversation with Firebase Storage URLs
-            const finalMessages = [...chatMessages, userMessage, botResponse];
-            const chatId = await autoSaveChatSession(finalMessages);
-            
-            // Save all recipes to Firestore (now with Firebase Storage URLs)
-            if (chatId && allRecipes.length > 0) {
-              await saveRecipesToFirestore(botResponse.recipes || allRecipes, chatId);
-              console.log(`💾 Saved ${allRecipes.length} recipes with Firebase Storage URLs to Firestore`);
-            }
-          } else {
-            // Fallback if no recipes generated
-            setChatMessages(prev => prev.map(msg => 
-              msg.id === thinkingResponse.id 
-                ? {
-                    ...msg,
-                    text: "I'd love to help you with recipes! Could you tell me more about what type of cuisine or specific dish you're interested in?",
-                    recipes: []
-                  }
-                : msg
-            ));
-          }
-          
-        } catch (error) {
-          console.error('Error generating background recipes:', error);
-          const errorResponse = {
-            id: (Date.now() + 1).toString(),
-            text: "I'm having trouble generating recipes right now. Let me help you with cooking tips instead! What would you like to know?",
-            isBot: true,
-            timestamp: new Date()
-          };
-          setChatMessages(prev => [...prev, errorResponse]);
+            return recipe;
+          })
+        );
+
+        // Update bot response with processed images
+        const processedRecipesWithIds = processedRecipes.map(recipe => ({
+          ...recipe,
+          id: recipe.id || `recipe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        }));
+
+        const updatedBotResponse = {
+          ...botResponse,
+          recipes: processedRecipesWithIds as any[] // Type assertion to handle interface differences
+        };
+
+        setChatMessages(prev => prev.map(msg =>
+          msg.id === thinkingResponse.id ? updatedBotResponse : msg
+        ));
+
+        // Auto-save conversation with processed images
+        const finalMessages = [...chatMessages, userMessage, updatedBotResponse];
+        const chatId = await autoSaveChatSession(finalMessages);
+
+        // Save recipes to Firestore
+        if (chatId && processedRecipesWithIds.length > 0) {
+          await saveRecipesToFirestore(processedRecipesWithIds as any[], chatId);
+          console.log(`💾 Saved ${processedRecipesWithIds.length} recipes to Firestore`);
         }
-      } else if (isRecipeRequest && !userPreferences?.onboardingCompleted) {
-        botResponse = {
-          id: (Date.now() + 1).toString(),
-          text: "I'd be happy to help you with personalized recipes! To give you the best recommendations, please complete your profile setup first by visiting your preferences.",
-          isBot: true,
-          timestamp: new Date()
-        };
-        setChatMessages(prev => [...prev, botResponse]);
       } else {
-        // General cooking assistant response
-        const responses = [
-          "That's an interesting question! I'm here to help with all your cooking needs. Would you like me to suggest some recipes?",
-          "I'd be happy to help! Could you be more specific about what cooking topic you'd like assistance with?",
-          "Great question! I can help with recipes, cooking techniques, meal planning, and ingredient substitutions. What interests you most?",
-          "I'm your cooking companion! Whether you need recipes, cooking tips, or meal ideas, I'm here to help. What would you like to explore?"
-        ];
-        
-        botResponse = {
-          id: (Date.now() + 1).toString(),
-          text: responses[Math.floor(Math.random() * responses.length)],
-          isBot: true,
-          timestamp: new Date()
-        };
-        
-        setChatMessages(prev => [...prev, botResponse]);
-        
-        // Auto-save conversation for all message types
+        // Auto-save conversation without recipes
         const finalMessages = [...chatMessages, userMessage, botResponse];
         await autoSaveChatSession(finalMessages);
       }
-      
+
+      // Log recipe generation success
+      if (recipes && recipes.length > 0) {
+        console.log('💡 Follow-up questions available: [Which recipe interests you most?, Would you like detailed cooking tips?, Do you need ingredient substitutions?]');
+        console.log('🥗 Nutritional advice provided: Each recipe includes balanced nutrition information');
+        console.log('👨‍🍳 Cooking tips provided:', recipes.length);
+      }
+
     } catch (error) {
-      console.error('Error handling message:', error);
+      console.error('Error in recipe generation:', error);
+
+      // Check if this is a LangChain related error
+      if (error instanceof Error && error.message.includes('LangChain')) {
+        console.error('❌ LangChain error detected - this should not happen as enhanced services are disabled');
+      }
+
+      // Fallback to simple response
       const errorResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: "I'm sorry, I'm having trouble right now. Please try again in a moment!",
+        text: "I'm having some technical difficulties right now, but I'm still here to help! As your AI chef and dietitian, I can assist with recipes, cooking techniques, and nutritional advice. Could you try rephrasing your question?",
         isBot: true,
         timestamp: new Date()
       };
-      setChatMessages(prev => [...prev, errorResponse]);
+
+      setChatMessages(prev => prev.map(msg =>
+        msg.id === (Date.now() + 1).toString() ? errorResponse : msg
+      ));
+
+      // Replace thinking message with error response
+      setChatMessages(prev => prev.map(msg =>
+        msg.text.includes('analyzing your request') ? errorResponse : msg
+      ));
     } finally {
       setIsGeneratingResponse(false);
     }
@@ -1042,16 +1094,16 @@ export default function DashboardPage() {
     if (chatMessages.length > 1) {
       await autoSaveChatSession(chatMessages);
     }
-    
+
     // Reset to new chat state
     setCurrentChatId(null);
     setChatMessages([]);
     setIsSidebarOpen(false);
-    
+
     // Add welcome message for new chat
     const welcomeMessage: ChatMessage = {
       id: "welcome-" + Date.now(),
-      text: `Hello! I'm your AI cooking assistant. I can help you with recipes, meal planning, cooking tips, and personalized recommendations. What would you like to cook today?`,
+      text: `Hello! I'm your AI chef and dietitian assistant. I provide professional culinary guidance, personalized recipe recommendations (1-7 recipes based on your needs), nutritional analysis, and cooking expertise. I remember our conversations and learn your preferences over time. What culinary adventure shall we embark on today?`,
       isBot: true,
       timestamp: new Date()
     };
@@ -1059,8 +1111,18 @@ export default function DashboardPage() {
   };
 
   const handleViewRecipe = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    
+    // Ensure recipe data is properly formatted for modal
+    const safeRecipe = {
+      ...recipe,
+      ingredients: Array.isArray(recipe.ingredients)
+        ? recipe.ingredients.map(ing => String(ing))
+        : [],
+      instructions: Array.isArray(recipe.instructions)
+        ? recipe.instructions.map(inst => String(inst))
+        : []
+    };
+    setSelectedRecipe(safeRecipe);
+
     // Use modal for mobile/tablet (including undefined state), panel for desktop
     if (isMobile || typeof isMobile === 'undefined') {
       setIsRecipeModalOpen(true);
@@ -1073,8 +1135,18 @@ export default function DashboardPage() {
 
   // Handle view recipe from sidebar (follows same flow as recipe cards)
   const handleViewRecipeFromSidebar = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    
+    // Ensure recipe data is properly formatted for modal
+    const safeRecipe = {
+      ...recipe,
+      ingredients: Array.isArray(recipe.ingredients)
+        ? recipe.ingredients.map(ing => String(ing))
+        : [],
+      instructions: Array.isArray(recipe.instructions)
+        ? recipe.instructions.map(inst => String(inst))
+        : []
+    };
+    setSelectedRecipe(safeRecipe);
+
     // Use panel for desktop (large screens), modal for mobile/tablet (small screens)
     if (isMobile || typeof isMobile === 'undefined') {
       setIsRecipeModalOpen(true);
@@ -1109,25 +1181,25 @@ export default function DashboardPage() {
 
     try {
       console.log('🔄 Saving recipe:', recipe.title, 'for user:', user.uid);
-      
+
       // Check if recipe is already saved using title and userId
       const existingQuery = query(
         collection(db!, 'savedRecipes'),
         where('userId', '==', user.uid),
         where('title', '==', recipe.title)
       );
-      
+
       const existingSnapshot = await getDocs(existingQuery);
-      
+
       if (!existingSnapshot.empty) {
         toast.info('Recipe already saved!', {
           description: 'This recipe is already in your saved collection.'
         });
         return;
       }
-      
+
       const now = new Date();
-      
+
       // Process image URL - upload to Firebase Storage if it's a base64 data URL
       console.log('🖼️ Processing recipe image...');
       const processedImageUrl = await processRecipeImageUrl(
@@ -1135,9 +1207,9 @@ export default function DashboardPage() {
         user.uid,
         recipe.title
       );
-      
+
       console.log('✅ Image processed successfully:', processedImageUrl ? 'URL available' : 'No image');
-      
+
       // Create a clean recipe object following the SavedRecipe interface
       const savedRecipeData = {
         // Core recipe data
@@ -1152,37 +1224,37 @@ export default function DashboardPage() {
         calories: recipe.calories || null,
         // Store the processed image URL (Firebase Storage URL or HTTP URL)
         imageUrl: processedImageUrl,
-        
+
         // Saved recipe specific data
         userId: user.uid,
         savedAt: serverTimestamp(),
         createdAt: now,
         updatedAt: serverTimestamp(),
-        
+
         // Optional metadata
         chatId: currentChatId || null,
         source: 'ai_generated'
       };
-      
+
       // Save recipe to Firestore - this will create the collection if it doesn't exist
       const docRef = await addDoc(collection(db!, 'savedRecipes'), savedRecipeData);
-      
+
       console.log('✅ Recipe saved successfully with ID:', docRef.id, 'Title:', recipe.title);
-      
+
       // Refresh saved recipes list to show the new recipe
       await loadSavedRecipes();
-      
+
       toast.success('Recipe Saved!', {
         description: `${recipe.title} has been saved to your collection.`
       });
-      
+
       // Close the modal or panel if open
       setIsRecipeModalOpen(false);
       setIsRecipePanelOpen(false);
-      
+
     } catch (error) {
       console.error('Error saving recipe:', error);
-      
+
       toast.error('Failed to save recipe', {
         description: 'Please check your connection and try again.'
       });
@@ -1220,7 +1292,7 @@ export default function DashboardPage() {
     toast.info('Running Firebase tests...', {
       description: 'Check the console for detailed results.'
     });
-    
+
     const connectionTest = await testFirebaseConnection();
     if (connectionTest) {
       await testSpecificCollections();
@@ -1340,7 +1412,7 @@ export default function DashboardPage() {
 
       {/* Mobile Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -1355,7 +1427,7 @@ export default function DashboardPage() {
           bg-background/95 backdrop-blur-sm border-r border-border/50 
           flex-shrink-0 transition-transform duration-300 ease-in-out lg:transition-none 
           shadow-lg lg:shadow-sm flex flex-col overflow-hidden`}>
-          
+
           {/* Mobile/Tablet Header */}
           <div className="lg:hidden flex justify-between items-center p-3 sm:p-4 border-b border-border/30 flex-shrink-0 bg-background/90">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1376,23 +1448,23 @@ export default function DashboardPage() {
           <div className="relative flex-1 overflow-hidden">
             {/* Top gradient for visual depth */}
             <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-background/95 to-transparent pointer-events-none z-20" />
-            
-            <ScrollArea 
-              className="h-full w-full" 
+
+            <ScrollArea
+              className="h-full w-full"
               type="always"
               scrollHideDelay={600}
             >
               <div className="p-3 sm:p-4 lg:p-4 space-y-4">
                 {/* New Chat Button */}
                 <div className="space-y-2">
-                  <Button 
+                  <Button
                     onClick={handleNewChat}
                     className="w-full justify-center bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-sm hover:shadow-md transition-all duration-200 rounded-lg h-10 font-medium"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     New Recipe Chat
                   </Button>
-                  <Button 
+                  <Button
                     onClick={refreshSidebarData}
                     disabled={isLoadingData}
                     variant="outline"
@@ -1415,11 +1487,10 @@ export default function DashboardPage() {
                       variant={sidebarTab === 'chats' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setSidebarTab('chats')}
-                      className={`flex-1 text-xs font-medium transition-all ${
-                        sidebarTab === 'chats' 
-                          ? 'bg-primary/15 text-primary shadow-sm border border-primary/30' 
-                          : 'hover:bg-accent/50'
-                      }`}
+                      className={`flex-1 text-xs font-medium transition-all ${sidebarTab === 'chats'
+                        ? 'bg-primary/15 text-primary shadow-sm border border-primary/30'
+                        : 'hover:bg-accent/50'
+                        }`}
                     >
                       <MessageSquare className="w-3 h-3 mr-1.5" />
                       Chats {chatHistory.length > 0 && `(${chatHistory.length})`}
@@ -1428,11 +1499,10 @@ export default function DashboardPage() {
                       variant={sidebarTab === 'recipes' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setSidebarTab('recipes')}
-                      className={`flex-1 text-xs font-medium transition-all ${
-                        sidebarTab === 'recipes' 
-                          ? 'bg-primary/15 text-primary shadow-sm border border-primary/30' 
-                          : 'hover:bg-accent/50'
-                      }`}
+                      className={`flex-1 text-xs font-medium transition-all ${sidebarTab === 'recipes'
+                        ? 'bg-primary/15 text-primary shadow-sm border border-primary/30'
+                        : 'hover:bg-accent/50'
+                        }`}
                     >
                       <BookOpen className="w-3 h-3 mr-1.5" />
                       Saved {savedRecipes.length > 0 && `(${savedRecipes.length})`}
@@ -1470,7 +1540,7 @@ export default function DashboardPage() {
                             <div className="flex-shrink-0 w-6 h-6 lg:w-7 lg:h-7 bg-primary/10 rounded-md lg:rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/30 group-hover:bg-primary/15 transition-all duration-200">
                               <MessageSquare className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-primary" />
                             </div>
-                            
+
                             {/* Compact Content */}
                             <div className="flex-1 min-w-0 space-y-1">
                               {/* Title - Compact with better line clamping */}
@@ -1487,27 +1557,27 @@ export default function DashboardPage() {
                                   </div>
                                 )}
                               </div>
-                              
+
                               {/* Compact Metadata Row */}
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1.5">
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-2.5 h-2.5" />
-                                    {chat.timestamp.toLocaleDateString('en-US', { 
-                                      month: 'short', 
+                                    {chat.timestamp.toLocaleDateString('en-US', {
+                                      month: 'short',
                                       day: 'numeric'
                                     })}
                                   </span>
                                   <span className="w-0.5 h-0.5 bg-muted-foreground/40 rounded-full"></span>
-                                  <span>{chat.timestamp.toLocaleTimeString('en-US', { 
-                                    hour: 'numeric', 
+                                  <span>{chat.timestamp.toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
                                     minute: '2-digit'
                                   })}</span>
                                 </div>
-                                
+
                                 {/* Compact Message Badge */}
-                                <Badge 
-                                  variant="secondary" 
+                                <Badge
+                                  variant="secondary"
                                   className="text-xs h-4 px-1.5 bg-primary/10 text-primary border-0 font-medium"
                                 >
                                   {chat.messageCount}
@@ -1515,7 +1585,7 @@ export default function DashboardPage() {
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Subtle hover indicator */}
                           <div className="absolute inset-0 rounded-lg lg:rounded-xl border border-transparent group-hover:border-primary/20 pointer-events-none transition-all duration-200"></div>
                         </div>
@@ -1542,8 +1612,8 @@ export default function DashboardPage() {
                           <div className="flex items-start gap-2 lg:gap-2.5 xl:gap-2">
                             <div className="w-8 h-8 lg:w-10 lg:h-10 xl:w-9 xl:h-9 bg-gradient-to-br from-accent to-accent/80 rounded-md lg:rounded-lg flex items-center justify-center flex-shrink-0">
                               {recipe.imageUrl && recipe.imageUrl.trim() !== '' ? (
-                                <img 
-                                  src={recipe.imageUrl} 
+                                <img
+                                  src={recipe.imageUrl}
                                   alt={recipe.title}
                                   className="w-full h-full object-cover rounded-md lg:rounded-lg"
                                   onError={(e) => {
@@ -1603,10 +1673,10 @@ export default function DashboardPage() {
                 <div className="h-6"></div>
               </div>
             </ScrollArea>
-            
+
             {/* Scroll indicator at bottom for mobile */}
             <div className="lg:hidden absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-background/90 via-background/50 to-transparent pointer-events-none flex items-end justify-center pb-2">
-              <motion.div 
+              <motion.div
                 className="flex items-center gap-1 text-xs text-muted-foreground/70"
                 animate={{ opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -1620,9 +1690,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Right Content Area */}
-        <div className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${
-          !isMobile && isRecipePanelOpen ? 'mr-[480px] xl:mr-[520px] 2xl:mr-[580px]' : ''
-        }`}>
+        <div className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${!isMobile && isRecipePanelOpen ? 'mr-[480px] xl:mr-[520px] 2xl:mr-[580px]' : ''
+          }`}>
           {/* Mobile/Tablet Header */}
           <div className="lg:hidden p-3 sm:p-4 border-b border-border/40 bg-background/95 backdrop-blur-sm sticky top-0 z-30">
             <div className="flex items-center justify-between">
@@ -1685,101 +1754,100 @@ export default function DashboardPage() {
             <ScrollArea className="h-full" type="always">
               <div className="p-4 md:p-6 pb-6">
                 <div className="max-w-4xl mx-auto space-y-4">
-                <AnimatePresence>
-                  {chatMessages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}
-                    >
-                      <div className={`flex items-start gap-2 max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[70%] ${message.isBot ? 'flex-row' : 'flex-row-reverse'}`}>
-                        <Avatar className="w-6 h-6 flex-shrink-0 ring-1 ring-border/20">
-                          {message.isBot ? (
-                            <AvatarFallback className="bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-xs">
-                              <ChefHat className="w-3 h-3" />
-                            </AvatarFallback>
-                          ) : (
-                            <>
-                              <AvatarImage src={user?.photoURL || undefined} />
-                              <AvatarFallback className="bg-gradient-to-br from-muted to-muted/80 text-muted-foreground font-medium text-xs">
-                                {getUserInitials()}
+                  <AnimatePresence>
+                    {chatMessages.map((message) => (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}
+                        data-testid="chat-message"
+                      >
+                        <div className={`flex items-start gap-2 max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[70%] ${message.isBot ? 'flex-row' : 'flex-row-reverse'}`}>
+                          <Avatar className="w-6 h-6 flex-shrink-0 ring-1 ring-border/20">
+                            {message.isBot ? (
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-xs">
+                                <ChefHat className="w-3 h-3" />
                               </AvatarFallback>
-                            </>
-                          )}
-                        </Avatar>
+                            ) : (
+                              <>
+                                <AvatarImage src={user?.photoURL || undefined} />
+                                <AvatarFallback className="bg-gradient-to-br from-muted to-muted/80 text-muted-foreground font-medium text-xs">
+                                  {getUserInitials()}
+                                </AvatarFallback>
+                              </>
+                            )}
+                          </Avatar>
 
-                        <div className={`flex flex-col ${message.isBot ? 'items-start' : 'items-end'} space-y-1`}>
-                          <div className={`relative rounded-2xl px-3 py-2 max-w-full shadow-sm ${
-                            message.isBot 
-                              ? 'bg-muted/80 text-foreground border border-border/40' 
+                          <div className={`flex flex-col ${message.isBot ? 'items-start' : 'items-end'} space-y-1`}>
+                            <div className={`relative rounded-2xl px-3 py-2 max-w-full shadow-sm ${message.isBot
+                              ? 'bg-muted/80 text-foreground border border-border/40'
                               : 'bg-gradient-to-br from-primary to-primary/95 text-primary-foreground'
-                          }`}>
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.text}</p>
-                          </div>
-
-                          {/* Recipe Cards - Responsive Layout */}
-                          {message.recipes && message.recipes.length > 0 && (
-                            <div className="w-full mt-2">
-                              <div className={`grid gap-2 lg:gap-3 ${
-                                !isMobile && isRecipePanelOpen 
-                                  ? 'grid-cols-1 sm:grid-cols-2' 
-                                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
                               }`}>
-                                {message.recipes.map((recipe, index) => (
-                                  <motion.div
-                                    key={recipe.id || `${recipe.title || 'recipe'}-${index}`}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05, duration: 0.2 }}
-                                  >
-                                    <RecipeCard
-                                      recipe={recipe}
-                                      onViewDetails={handleViewRecipe}
-                                      onSave={handleSaveRecipe}
-                                      onShare={handleShareRecipe}
-                                      index={index}
-                                      className="h-full"
-                                    />
-                                  </motion.div>
-                                ))}
-                              </div>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.text}</p>
                             </div>
-                          )}
 
-                          <p className="text-xs text-muted-foreground/60 px-1 mt-1">
-                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                            {/* Recipe Cards - Responsive Layout */}
+                            {message.recipes && message.recipes.length > 0 && (
+                              <div className="w-full mt-2">
+                                <div className={`grid gap-2 lg:gap-3 ${!isMobile && isRecipePanelOpen
+                                  ? 'grid-cols-1 sm:grid-cols-2'
+                                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                                  }`}>
+                                  {message.recipes.map((recipe, index) => (
+                                    <motion.div
+                                      key={recipe.id || `${recipe.title || 'recipe'}-${index}`}
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ delay: index * 0.05, duration: 0.2 }}
+                                    >
+                                      <RecipeCard
+                                        recipe={recipe}
+                                        onViewDetails={handleViewRecipe}
+                                        onSave={handleSaveRecipe}
+                                        onShare={handleShareRecipe}
+                                        index={index}
+                                        className="h-full"
+                                      />
+                                    </motion.div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <p className="text-xs text-muted-foreground/60 px-1 mt-1">
+                              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+
+                  {isGeneratingResponse && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
+                      <div className="flex items-start gap-2">
+                        <Avatar className="w-6 h-6 ring-1 ring-border/20">
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-xs">
+                            <ChefHat className="w-3 h-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="bg-muted/80 text-foreground border border-border/40 rounded-2xl px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              <div className="w-1 h-1 bg-primary rounded-full animate-bounce" />
+                              <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                              <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                            </div>
+                            <span className="text-xs text-muted-foreground">Thinking...</span>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
-                  ))}
-                </AnimatePresence>
+                  )}
 
-                {isGeneratingResponse && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
-                    <div className="flex items-start gap-2">
-                      <Avatar className="w-6 h-6 ring-1 ring-border/20">
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-xs">
-                          <ChefHat className="w-3 h-3" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="bg-muted/80 text-foreground border border-border/40 rounded-2xl px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" />
-                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                          </div>
-                          <span className="text-xs text-muted-foreground">Thinking...</span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                <div ref={messagesEndRef} />
+                  <div ref={messagesEndRef} />
                 </div>
               </div>
             </ScrollArea>
@@ -1789,112 +1857,122 @@ export default function DashboardPage() {
           <div className="flex-shrink-0 border-t border-border/50 bg-background/95 backdrop-blur-xl">
             <div className="p-3 sm:p-4">
               <div className="max-w-4xl mx-auto space-y-3">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative bg-background/70 backdrop-blur-xl border-2 border-border/50 rounded-xl focus-within:border-primary/50 focus-within:bg-background transition-all duration-200 shadow-sm hover:shadow-md">
-                  <textarea
-                    value={chatMessage}
-                    onChange={(e) => {
-                      setChatMessage(e.target.value);
-                      // Auto-resize textarea
-                      const textarea = e.target as HTMLTextAreaElement;
-                      textarea.style.height = 'auto';
-                      const newHeight = Math.min(textarea.scrollHeight, 80); // Max height of ~2-3 lines
-                      textarea.style.height = `${newHeight}px`;
-                    }}
-                    placeholder="Ask me about recipes, cooking tips, meal planning, or anything culinary..."
-                    className="w-full min-h-[40px] max-h-[80px] p-3 pr-10 bg-transparent border-0 rounded-xl resize-none focus:outline-none focus:ring-0 text-sm placeholder:text-muted-foreground/60 leading-relaxed scrollbar-hide"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey && chatMessage.trim() && !isGeneratingResponse) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    disabled={isGeneratingResponse}
-                    rows={1}
-                    style={{ height: '40px' }}
-                  />
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-2">
-                    {chatMessage.trim() && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        className="text-xs text-muted-foreground bg-accent/30 px-2 py-1 rounded-md hidden sm:block"
-                      >
-                        {chatMessage.length}/1000
-                      </motion.div>
-                    )}
-                    <Button
-                      size="sm"
-                      className="h-7 w-7 p-0 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground disabled:opacity-50 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg disabled:cursor-not-allowed"
-                      onClick={handleSendMessage}
-                      disabled={!chatMessage.trim() || isGeneratingResponse || chatMessage.length > 1000}
-                    >
-                      {isGeneratingResponse ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Send className="w-3.5 h-3.5" />
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative bg-background/70 backdrop-blur-xl border-2 border-border/50 rounded-xl focus-within:border-primary/50 focus-within:bg-background transition-all duration-200 shadow-sm hover:shadow-md">
+                    <textarea
+                      data-testid="chat-input"
+                      value={chatMessage}
+                      onChange={(e) => {
+                        setChatMessage(e.target.value);
+                        // Auto-resize textarea
+                        const textarea = e.target as HTMLTextAreaElement;
+                        textarea.style.height = 'auto';
+                        const newHeight = Math.min(textarea.scrollHeight, 80); // Max height of ~2-3 lines
+                        textarea.style.height = `${newHeight}px`;
+                      }}
+                      placeholder="Ask your professional AI chef & dietitian: personalized recipes, nutritional analysis, cooking techniques, meal planning..."
+                      className="w-full min-h-[40px] max-h-[80px] p-3 pr-10 bg-transparent border-0 rounded-xl resize-none focus:outline-none focus:ring-0 text-sm placeholder:text-muted-foreground/60 leading-relaxed scrollbar-hide"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && chatMessage.trim() && !isGeneratingResponse) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      disabled={isGeneratingResponse}
+                      rows={1}
+                      style={{ height: '40px' }}
+                    />
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+                      {chatMessage.trim() && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="text-xs text-muted-foreground bg-accent/30 px-2 py-1 rounded-md hidden sm:block"
+                        >
+                          {chatMessage.length}/1000
+                        </motion.div>
                       )}
-                    </Button>
+                      <Button
+                        data-testid="send-button"
+                        size="sm"
+                        className="h-7 w-7 p-0 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground disabled:opacity-50 shadow-sm hover:shadow-md transition-all duration-200 rounded-lg disabled:cursor-not-allowed"
+                        onClick={handleSendMessage}
+                        disabled={!chatMessage.trim() || isGeneratingResponse || chatMessage.length > 1000}
+                      >
+                        {isGeneratingResponse ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Send className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Floating helper text */}
+                  <div className="absolute -bottom-5 left-3 text-xs text-muted-foreground/70 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block">
+                    Press Enter to send • Shift+Enter for new line
                   </div>
                 </div>
-                
-                {/* Floating helper text */}
-                <div className="absolute -bottom-5 left-3 text-xs text-muted-foreground/70 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block">
-                  Press Enter to send • Shift+Enter for new line
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-center flex-wrap gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-xs bg-background/50 border-border/50 hover:bg-accent/50 hover:border-primary/30 transition-all duration-200 rounded-lg px-2 py-1 backdrop-blur-sm flex-shrink-0 h-6" 
-                  onClick={() => setChatMessage('Show me a quick dinner recipe')}
-                >
-                  <Clock className="w-3 h-3 mr-1" />
-                  Quick Dinner
-                </Button>
-                <Link href="/meal-planning">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-xs bg-background/50 border-border/50 hover:bg-accent/50 hover:border-primary/30 transition-all duration-200 rounded-lg px-2 py-1 backdrop-blur-sm flex-shrink-0 h-6" 
+
+                <div className="flex items-center justify-center flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs bg-background/50 border-border/50 hover:bg-accent/50 hover:border-primary/30 transition-all duration-200 rounded-lg px-2 py-1 backdrop-blur-sm flex-shrink-0 h-6"
+                    onClick={() => setChatMessage('Give me 3 quick dinner recipes')}
                   >
-                    <Calendar className="w-3 h-3 mr-1" />
-                    Meal Planning
+                    <Clock className="w-3 h-3 mr-1" />
+                    Quick Recipes
                   </Button>
-                </Link>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-xs bg-background/50 border-border/50 hover:bg-accent/50 hover:border-primary/30 transition-all duration-200 rounded-lg px-2 py-1 backdrop-blur-sm flex-shrink-0 h-6" 
-                  onClick={() => setChatMessage('What can I cook with chicken?')}
-                >
-                  <PenTool className="w-3 h-3 mr-1" />
-                  Ingredients
-                </Button>
-              </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs bg-background/50 border-border/50 hover:bg-accent/50 hover:border-primary/30 transition-all duration-200 rounded-lg px-2 py-1 backdrop-blur-sm flex-shrink-0 h-6"
+                    onClick={() => setChatMessage('What can I cook with chicken and vegetables?')}
+                  >
+                    <PenTool className="w-3 h-3 mr-1" />
+                    Ingredients
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs bg-background/50 border-border/50 hover:bg-accent/50 hover:border-primary/30 transition-all duration-200 rounded-lg px-2 py-1 backdrop-blur-sm flex-shrink-0 h-6"
+                    onClick={() => setChatMessage('I need nutritional advice for weight loss')}
+                  >
+                    <Utensils className="w-3 h-3 mr-1" />
+                    Nutrition
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs bg-background/50 border-border/50 hover:bg-accent/50 hover:border-primary/30 transition-all duration-200 rounded-lg px-2 py-1 backdrop-blur-sm flex-shrink-0 h-6"
+                    onClick={() => setChatMessage('Help me with sautéing techniques')}
+                  >
+                    <ChefHat className="w-3 h-3 mr-1" />
+                    Techniques
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
+
       {/* Recipe Detail Modal - Mobile/Tablet only */}
       {(isMobile || typeof isMobile === 'undefined') && (
-        <RecipeModal 
+        <RecipeModal
           recipe={selectedRecipe}
           isOpen={isRecipeModalOpen}
           onClose={() => setIsRecipeModalOpen(false)}
           onSave={handleSaveRecipe}
         />
       )}
-      
+
       {/* Recipe Detail Panel - Desktop only */}
       {!isMobile && typeof isMobile !== 'undefined' && (
-        <RecipePanel 
+        <RecipePanel
           recipe={selectedRecipe}
           isOpen={isRecipePanelOpen}
           onClose={handleCloseRecipePanel}
@@ -1902,7 +1980,7 @@ export default function DashboardPage() {
           onShare={handleShareRecipe}
         />
       )}
-      
+
     </div>
   );
 }

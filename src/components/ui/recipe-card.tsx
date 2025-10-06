@@ -134,7 +134,7 @@ export default function RecipeCard({
                 <div className="mx-2 mb-2 rounded-lg bg-black/45 text-white backdrop-blur-sm px-2 py-1.5 flex items-center justify-between gap-2 text-[10px] sm:text-xs">
                   <div className="flex items-center gap-1"><Timer className="w-3 h-3" /><span>{recipe.cookingTime}</span></div>
                   <div className="flex items-center gap-1"><Users className="w-3 h-3" /><span>{recipe.servings}</span></div>
-                  <div className="flex items-center gap-1"><ChefHat className="w-3 h-3" /><span>{recipe.ingredients.length}</span></div>
+                  <div className="flex items-center gap-1"><ChefHat className="w-3 h-3" /><span>{Array.isArray(recipe.ingredients) ? recipe.ingredients.length : 0}</span></div>
                   {recipe.calories && (
                     <div className="flex items-center gap-1"><Flame className="w-3 h-3 text-orange-400" /><span>{recipe.calories}</span></div>
                   )}
@@ -182,7 +182,7 @@ export default function RecipeCard({
             
             <div className="flex items-center gap-1">
               <ChefHat className="w-3 h-3 text-primary" />
-              <span className="font-medium">{recipe.ingredients.length}</span>
+              <span className="font-medium">{Array.isArray(recipe.ingredients) ? recipe.ingredients.length : 0}</span>
             </div>
 
             {recipe.calories && (

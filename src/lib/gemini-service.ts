@@ -89,6 +89,9 @@ interface UserPreferences {
   skillLevel: 'beginner' | 'intermediate' | 'expert';
   cookingTime: '15min' | '30min' | '1hr+';
   goals: string[];
+  // Enhanced fields for better context awareness
+  specificRequest?: string;
+  requestedType?: string;
 }
 
 // Recipe interface
@@ -128,9 +131,15 @@ export async function* generatePersonalizedRecipesProgressive(
       maxOutputTokens: 4096,
     };
 
-    // Create a detailed prompt based on user preferences
+    // Create a detailed prompt based on user preferences and specific request
+    const specificRequest = userPreferences.specificRequest?.trim();
+    const requestedType = userPreferences.requestedType?.trim();
+    
     const prompt = `
-You are an expert chef and nutritionist. Generate ${count} personalized recipes based on these user preferences:
+You are an expert chef and nutritionist. Generate ${count} personalized recipes based on these user preferences and their specific request:
+
+**USER'S SPECIFIC REQUEST**: "${specificRequest || 'General recipe recommendations'}"
+**REQUESTED RECIPE TYPE**: ${requestedType || 'Any type'}
 
 **Dietary Restrictions**: ${userPreferences.dietaryRestrictions.length > 0 ? userPreferences.dietaryRestrictions.join(', ') : 'None'}
 **Cuisine Preferences**: ${userPreferences.cuisinePreferences.join(', ')}
@@ -138,6 +147,8 @@ You are an expert chef and nutritionist. Generate ${count} personalized recipes 
 **Skill Level**: ${userPreferences.skillLevel}
 **Cooking Time Preference**: ${userPreferences.cookingTime}
 **Goals**: ${userPreferences.goals.length > 0 ? userPreferences.goals.join(', ') : 'General cooking'}
+
+IMPORTANT: Pay special attention to the user's specific request. If they asked for "salad recipes" or mentioned "salad", ALL recipes should be salads. If they asked for a specific type of dish, focus primarily on that type.
 
 Please return ONLY a valid JSON array of recipes with this exact structure:
 [
@@ -282,9 +293,15 @@ export const generatePersonalizedRecipes = async (
       maxOutputTokens: 4096,
     };
 
-    // Create a detailed prompt based on user preferences
+    // Create a detailed prompt based on user preferences and specific request
+    const specificRequest = userPreferences.specificRequest?.trim();
+    const requestedType = userPreferences.requestedType?.trim();
+    
     const prompt = `
-You are an expert chef and nutritionist. Generate ${count} personalized recipes based on these user preferences:
+You are an expert chef and nutritionist. Generate ${count} personalized recipes based on these user preferences and their specific request:
+
+**USER'S SPECIFIC REQUEST**: "${specificRequest || 'General recipe recommendations'}"
+**REQUESTED RECIPE TYPE**: ${requestedType || 'Any type'}
 
 **Dietary Restrictions**: ${userPreferences.dietaryRestrictions.length > 0 ? userPreferences.dietaryRestrictions.join(', ') : 'None'}
 **Cuisine Preferences**: ${userPreferences.cuisinePreferences.join(', ')}
@@ -292,6 +309,8 @@ You are an expert chef and nutritionist. Generate ${count} personalized recipes 
 **Skill Level**: ${userPreferences.skillLevel}
 **Cooking Time Preference**: ${userPreferences.cookingTime}
 **Goals**: ${userPreferences.goals.length > 0 ? userPreferences.goals.join(', ') : 'General cooking'}
+
+IMPORTANT: Pay special attention to the user's specific request. If they asked for "salad recipes" or mentioned "salad", ALL recipes should be salads. If they asked for a specific type of dish, focus primarily on that type.
 
 Please return ONLY a valid JSON array of recipes with this exact structure:
 [
