@@ -6,6 +6,29 @@ let genAI: GoogleGenerativeAI | null = null;
 // Environment variable that's safely available in both SSR and browser
 // Next.js will replace NEXT_PUBLIC_ env vars at build time
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+// Allow overriding the text model via env; default to a v1beta-supported model
+const RAW_GEMINI_TEXT_MODEL = process.env.NEXT_PUBLIC_GEMINI_TEXT_MODEL || 'gemini-2.0-flash';
+
+// Fallback text model known to work with v1beta generateContent
+const FALLBACK_TEXT_MODEL = 'gemini-2.0-flash';
+
+// Map deprecated/unsupported names to supported ones
+const resolveTextModelName = (modelName: string): string => {
+  const normalized = (modelName || '').trim().toLowerCase();
+  const deprecatedMap: Record<string, string> = {
+    'gemini-1.5-flash': FALLBACK_TEXT_MODEL,
+    'gemini-1.5-flash-001': FALLBACK_TEXT_MODEL,
+    'gemini-1.0-pro': FALLBACK_TEXT_MODEL,
+    'gemini-pro': FALLBACK_TEXT_MODEL,
+  };
+  if (deprecatedMap[normalized]) {
+    try { console.warn(`Requested text model "${modelName}" is deprecated/unsupported. Using "${deprecatedMap[normalized]}".`); } catch {}
+    return deprecatedMap[normalized];
+  }
+  return modelName;
+};
+
+const GEMINI_TEXT_MODEL = resolveTextModelName(RAW_GEMINI_TEXT_MODEL);
 
 // Safely get environment variable in browser
 const getApiKey = (): string | null => {
@@ -28,8 +51,34 @@ const initializeGemini = () => {
   
   if (!genAI) {
     genAI = new GoogleGenerativeAI(apiKey);
+    try {
+      // One-time startup log to confirm the selected model in client builds
+      console.log('Gemini text model in use:', GEMINI_TEXT_MODEL);
+    } catch {}
   }
   return genAI;
+};
+
+// Helper to run generateContent with automatic retry on model-not-found
+const generateContentWithRetry = async (
+  client: GoogleGenerativeAI,
+  modelName: string,
+  prompt: string,
+  generationConfig?: any
+) => {
+  const primary = client.getGenerativeModel({ model: modelName, generationConfig });
+  try {
+    return await primary.generateContent(prompt);
+  } catch (err: any) {
+    const message = (err && err.message) || '';
+    const isModelIssue = message.includes('is not found') || message.includes('not supported for generateContent');
+    if (isModelIssue && modelName !== FALLBACK_TEXT_MODEL) {
+      try { console.warn(`Model "${modelName}" failed for generateContent. Retrying with fallback "${FALLBACK_TEXT_MODEL}"...`); } catch {}
+      const fallbackModel = client.getGenerativeModel({ model: FALLBACK_TEXT_MODEL, generationConfig });
+      return await fallbackModel.generateContent(prompt);
+    }
+    throw err;
+  }
 };
 
 // User preferences interface matching the auth context
@@ -71,16 +120,13 @@ export async function* generatePersonalizedRecipesProgressive(
   }
 
   try {
-    // Use gemini-1.5-flash for complex recipe generation
-    const model = client.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.8,
-        topK: 40,
-        maxOutputTokens: 4096,
-      }
-    });
+    // Use configured text model for complex recipe generation (supported in v1beta)
+    const generationConfig = {
+      temperature: 0.7,
+      topP: 0.8,
+      topK: 40,
+      maxOutputTokens: 4096,
+    };
 
     // Create a detailed prompt based on user preferences
     const prompt = `
@@ -125,7 +171,7 @@ Requirements:
 Return only the JSON array, no additional text or formatting.
 `;
 
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithRetry(client, GEMINI_TEXT_MODEL, prompt, generationConfig as any);
     const response = await result.response;
     const text = response.text();
 
@@ -228,16 +274,13 @@ export const generatePersonalizedRecipes = async (
   }
 
   try {
-    // Use gemini-1.5-flash for complex recipe generation
-    const model = client.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.8,
-        topK: 40,
-        maxOutputTokens: 4096,
-      }
-    });
+    // Use configured text model for complex recipe generation (supported in v1beta)
+    const generationConfig = {
+      temperature: 0.7,
+      topP: 0.8,
+      topK: 40,
+      maxOutputTokens: 4096,
+    };
 
     // Create a detailed prompt based on user preferences
     const prompt = `
@@ -282,7 +325,7 @@ Requirements:
 Return only the JSON array, no additional text or formatting.
 `;
 
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithRetry(client, GEMINI_TEXT_MODEL, prompt, generationConfig as any);
     const response = await result.response;
     const text = response.text();
 
@@ -569,13 +612,10 @@ const generateDetailedImageDescription = async (recipe: Recipe): Promise<string>
   }
 
   try {
-    const model = client.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 300,
-      }
-    });
+    const generationConfig = {
+      temperature: 0.7,
+      maxOutputTokens: 300,
+    };
 
     const prompt = `As a professional food photographer, describe in detail how "${recipe.title}" should look when perfectly prepared and photographed.
     
@@ -595,7 +635,7 @@ const generateDetailedImageDescription = async (recipe: Recipe): Promise<string>
     
     Be specific about visual details that would help create the most accurate and appetizing image of this exact recipe.`;
 
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithRetry(client, GEMINI_TEXT_MODEL, prompt, generationConfig as any);
     const response = await result.response;
     return response.text().trim();
     

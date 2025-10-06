@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = 'force-static';
 
 // Cashfree real integration (uses sandbox by default). Falls back to mock link if credentials are missing.
 export async function POST(request: Request) {

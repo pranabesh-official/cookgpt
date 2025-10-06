@@ -141,7 +141,7 @@ src/
 - **Content Personalization**: Tailored recommendations
 
 #### Models Used
-- **gemini-1.5-flash**: Fast recipe text generation
+- **gemini-2.0-flash**: Fast recipe text generation (v1beta-supported)
 - **gemini-2.0-flash-preview-image-generation**: AI image creation
 
 #### Implementation Features

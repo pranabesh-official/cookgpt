@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = 'force-static';
 
 // Mock Cashfree webhook handler for local development
 export async function POST(request: Request) {
