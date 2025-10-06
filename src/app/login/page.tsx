@@ -34,11 +34,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
     defaultValues: { email: "", password: "" },
   });
+
+  // Handle client-side mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Redirect logic based on authentication and onboarding status
   useEffect(() => {
@@ -80,22 +86,42 @@ export default function LoginPage() {
     }
   };
 
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div>
+            <Card className="border-0 bg-card/80 backdrop-blur-xl rounded-3xl shadow-lg">
+              <CardHeader className="text-center pb-6">
+                <CardTitle className="text-2xl font-bold text-card-foreground flex items-center justify-center gap-2">
+                  <Shield className="w-6 h-6 text-primary" />
+                  Secure Sign In
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Choose your preferred sign-in method
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-center py-8">
+                  <div className="rounded-full h-8 w-8 border-4 border-primary/30 border-t-primary animate-spin" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show loading spinner while checking auth state
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center space-y-4"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="rounded-full h-12 w-12 border-4 border-primary/30 border-t-primary"
-          />
+        <div className="flex flex-col items-center space-y-4">
+          <div className="rounded-full h-12 w-12 border-4 border-primary/30 border-t-primary animate-spin" />
           <p className="text-muted-foreground font-medium">Loading...</p>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -103,13 +129,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-       
-
         {/* Login Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.1 }}
         >
           <Card className="border-0 bg-card/80 backdrop-blur-xl rounded-3xl shadow-lg">
             <CardHeader className="text-center pb-6">
@@ -201,8 +225,8 @@ export default function LoginPage() {
                       Remember me
                     </Label>
                   </div>
-                  <Link 
-                    href="#" 
+                  <Link
+                    href="#"
                     className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
                   >
                     Forgot password?
@@ -228,8 +252,8 @@ export default function LoginPage() {
               <div className="text-center">
                 <p className="text-muted-foreground">
                   Don&apos;t have an account?{" "}
-                  <Link 
-                    href="/register" 
+                  <Link
+                    href="/register"
                     className="text-primary hover:text-primary/80 font-medium transition-colors"
                   >
                     Sign up
