@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,17 @@ export default function RecipeCard({
   index = 0 
 }: RecipeCardProps) {
   const difficulty = difficultyConfig[recipe.difficulty] || difficultyConfig.Easy;
+  const [imageError, setImageError] = useState(false);
+  
+  // Reset image error state when recipe changes
+  useEffect(() => {
+    setImageError(false);
+  }, [recipe.id]);
+  
+  const handleImageError = () => {
+    console.warn(`Image failed to load for recipe: ${recipe.title}`);
+    setImageError(true);
+  };
 
   return (
     <motion.div
@@ -78,7 +90,7 @@ export default function RecipeCard({
       <Card className="group relative h-full bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur border border-border/50 hover:border-primary/30 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden rounded-xl">
         {/* Responsive Image Section */}
         <div className="relative h-32 sm:h-36 md:h-40 lg:h-44 xl:h-48 overflow-hidden">
-          {recipe.imageUrl ? (
+          {recipe.imageUrl && !imageError ? (
             <>
               <img 
                 src={recipe.imageUrl} 
@@ -86,6 +98,7 @@ export default function RecipeCard({
                 loading="lazy"
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 will-change-transform"
                 style={{ objectPosition: 'center' }}
+                onError={handleImageError}
               />
               {/* Subtle overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
@@ -150,8 +163,21 @@ export default function RecipeCard({
               </div>
             </>
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-muted/30 to-muted/60 flex items-center justify-center">
-              <Utensils className="w-8 h-8 text-muted-foreground/30" />
+            <div className="w-full h-full bg-gradient-to-br from-muted/20 to-muted/40 flex items-center justify-center relative group">
+              <div className="text-center">
+                <Utensils className="w-8 h-8 text-muted-foreground/40 mx-auto mb-1" />
+                <div className="text-xs text-muted-foreground/60 font-medium">
+                  {imageError ? 'Image Error' : 'No Image'}
+                </div>
+              </div>
+              
+              {/* Difficulty badge for no-image recipes */}
+              <div className="absolute top-2 left-2">
+                <Badge className={cn("text-xs font-medium px-1.5 py-0.5 shadow-sm backdrop-blur-sm", difficulty.bg, difficulty.color)}>
+                  <span className="mr-1">{difficulty.icon}</span>
+                  {recipe.difficulty}
+                </Badge>
+              </div>
             </div>
           )}
         </div>

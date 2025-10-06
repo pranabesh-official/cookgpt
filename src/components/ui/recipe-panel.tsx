@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Recipe } from "@/lib/gemini-service";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface RecipePanelProps {
   recipe: Recipe | null;
@@ -39,6 +39,17 @@ export default function RecipePanel({
   className 
 }: RecipePanelProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  
+  // Reset image error state when recipe changes
+  useEffect(() => {
+    setImageError(false);
+  }, [recipe?.id]);
+  
+  const handleImageError = () => {
+    console.warn(`Image failed to load for recipe: ${recipe?.title}`);
+    setImageError(true);
+  };
 
   if (!recipe) return null;
 
@@ -93,17 +104,25 @@ export default function RecipePanel({
           <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800 pb-20">
             <div className="p-6 space-y-6">
               {/* Recipe Image */}
-              {recipe.imageUrl && (
+              {recipe.imageUrl && !imageError ? (
                 <div className="relative h-48 lg:h-56 xl:h-64 rounded-xl overflow-hidden shadow-lg">
                   <img 
                     src={recipe.imageUrl} 
                     alt={recipe.title}
                     className="w-full h-full object-cover"
                     style={{ objectPosition: 'center' }}
+                    onError={handleImageError}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
                 </div>
-              )}
+              ) : recipe.imageUrl && imageError ? (
+                <div className="relative h-48 lg:h-56 xl:h-64 rounded-xl overflow-hidden shadow-lg bg-gradient-to-br from-muted/20 to-muted/40 flex items-center justify-center">
+                  <div className="text-center">
+                    <Utensils className="w-12 h-12 text-muted-foreground/40 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground/60 font-medium">Image Error</p>
+                  </div>
+                </div>
+              ) : null}
 
               {/* Recipe Title and Description */}
               <div className="space-y-3">

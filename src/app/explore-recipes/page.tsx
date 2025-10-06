@@ -16,17 +16,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger
 } from "@/components/ui/collapsible";
-import { 
-  Search, 
-  Filter, 
-  ChefHat, 
-  Clock, 
-  Users, 
+import {
+  Search,
+  Filter,
+  ChefHat,
+  Clock,
+  Users,
   Flame,
   Star,
   Utensils,
@@ -81,11 +81,13 @@ const DIETARY_OPTIONS = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Ke
 const MEAL_TYPE_OPTIONS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Desserts'];
 const GOAL_OPTIONS = ['Weight Loss', 'Muscle Gain', 'Healthy Eating', 'Quick Meals', 'Family Cooking', 'Meal Prep'];
 const CALORIES_OPTIONS = ['Under 300', '300-500', '500-700', '700-900', '900+'];
+// Removed IMAGE_FILTER_OPTIONS since we now automatically filter broken images
 
 export default function ExploreRecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({
     difficulty: [],
@@ -114,32 +116,391 @@ export default function ExploreRecipesPage() {
 
   // Quick presets
   const quickPresets = [
-    { label: "Vegan • ≤30m", apply: () => {
-      setFilters(prev => ({
-        ...prev,
-        dietary: Array.from(new Set([...(prev.dietary||[]), "Vegan"])),
-        cookingTime: Array.from(new Set([...(prev.cookingTime||[]), "30 minutes"]))
-      }));
-    }},
-    { label: "< 500 kcal", apply: () => {
-      setFilters(prev => ({
-        ...prev,
-        calories: Array.from(new Set([...(prev.calories||[]), "Under 300", "300-500"]))
-      }));
-    }},
-    { label: "Breakfast Quick", apply: () => {
-      setFilters(prev => ({
-        ...prev,
-        mealType: Array.from(new Set([...(prev.mealType||[]), "Breakfast"])),
-        cookingTime: Array.from(new Set([...(prev.cookingTime||[]), "15 minutes"]))
-      }));
-    }},
+    {
+      label: "Vegan • ≤30m", apply: () => {
+        setFilters(prev => ({
+          ...prev,
+          dietary: Array.from(new Set([...(prev.dietary || []), "Vegan"])),
+          cookingTime: Array.from(new Set([...(prev.cookingTime || []), "30 minutes"]))
+        }));
+      }
+    },
+    {
+      label: "< 500 kcal", apply: () => {
+        setFilters(prev => ({
+          ...prev,
+          calories: Array.from(new Set([...(prev.calories || []), "Under 300", "300-500"]))
+        }));
+      }
+    },
+
+    {
+      label: "Breakfast Quick", apply: () => {
+        setFilters(prev => ({
+          ...prev,
+          mealType: Array.from(new Set([...(prev.mealType || []), "Breakfast"])),
+          cookingTime: Array.from(new Set([...(prev.cookingTime || []), "15 minutes"]))
+        }));
+      }
+    },
   ];
 
   const RECIPES_PER_PAGE = 18;
 
+  // Recipe Modal Component for Mobile/Tablet
+  interface RecipeModalProps {
+    recipe: Recipe;
+    onClose: () => void;
+    user: any;
+  }
+
+  function RecipeModal({ recipe, onClose, user }: RecipeModalProps) {
+    const [imageError, setImageError] = useState(false);
+
+    const handleImageError = () => {
+      console.warn(`Image failed to load for recipe: ${recipe.title}`);
+      setImageError(true);
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.2 }}
+          className="relative max-w-4xl w-full h-[98vh] sm:h-[95vh] bg-background rounded-2xl shadow-2xl flex flex-col"
+        >
+          {/* Close Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="absolute top-4 right-4 z-20 bg-background/95 backdrop-blur-sm hover:bg-background rounded-lg border border-border/50 shadow-sm"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+
+          {/* Recipe Content */}
+          <div className="relative flex-1 flex flex-col">
+            {/* Header with Image */}
+            <div className="relative h-48 sm:h-64 bg-gradient-to-br from-accent/20 via-accent/10 to-accent/20 flex-shrink-0">
+              {recipe.imageUrl && !imageError ? (
+                <img
+                  src={recipe.imageUrl}
+                  alt={recipe.title}
+                  className="w-full h-full object-cover"
+                  onError={handleImageError}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full bg-gradient-to-br from-accent/20 via-accent/10 to-accent/20">
+                  <div className="text-center">
+                    <Utensils className="w-16 h-16 text-accent/50 mx-auto mb-2" />
+                    <p className="text-sm text-accent/70 font-medium">
+                      {imageError ? 'Image Error' : 'No Image'}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-6 text-white">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">{recipe.title}</h1>
+                <p className="text-base sm:text-lg opacity-90 line-clamp-2">{recipe.description}</p>
+              </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 pb-12">
+              {/* Recipe Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-accent/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">{recipe.cookingTime}</p>
+                    <p className="text-xs text-muted-foreground">Time</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">{recipe.servings}</p>
+                    <p className="text-xs text-muted-foreground">Servings</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">{recipe.difficulty}</p>
+                    <p className="text-xs text-muted-foreground">Difficulty</p>
+                  </div>
+                </div>
+                {recipe.calories && (
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">{recipe.calories}</p>
+                      <p className="text-xs text-muted-foreground">Calories</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2">
+                {recipe.tags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className="text-sm px-3 py-1 bg-background/50 border-border/50 text-foreground/70"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+
+              {/* Ingredients */}
+              <div>
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <ChefHat className="w-5 h-5 text-primary" />
+                  Ingredients
+                </h3>
+                <div className="space-y-3">
+                  {recipe.ingredients.map((ingredient, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-accent/30 rounded-lg">
+                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold flex-shrink-0 mt-0.5">
+                        {index + 1}
+                      </div>
+                      <span className="text-sm leading-relaxed">{ingredient}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div>
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <Utensils className="w-5 h-5 text-primary" />
+                  Cooking Instructions
+                </h3>
+                <div className="space-y-4">
+                  {recipe.instructions.map((instruction, index) => (
+                    <div key={index} className="flex gap-4 p-4 bg-accent/30 rounded-lg">
+                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold flex-shrink-0 mt-1">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm leading-relaxed">{instruction}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Extra spacing to ensure content is not cut off */}
+              <div className="h-8"></div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-6 pb-4">
+                {user ? (
+                  <>
+                    <Button className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-sm hover:shadow-md transition-all duration-200">
+                      Save Recipe
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 hover:bg-accent/50 hover:border-border/60 transition-all duration-200"
+                      onClick={() => window.location.href = '/meal-planning'}
+                    >
+                      Add to Meal Plan
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="flex-1">
+                      <Button className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-sm hover:shadow-md transition-all duration-200">
+                        Sign In to Save Recipe
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      className="flex-1 hover:bg-accent/50 hover:border-border/60 transition-all duration-200"
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: recipe.title,
+                            text: recipe.description,
+                            url: window.location.href
+                          });
+                        } else {
+                          navigator.clipboard.writeText(`Check out this recipe: ${recipe.title}`);
+                        }
+                      }}
+                    >
+                      Share Recipe
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Simple image URL validation (synchronous)
+  const isValidImageUrl = (imageUrl: string): boolean => {
+    if (!imageUrl || imageUrl.trim() === '') return false;
+
+    // Basic URL validation
+    try {
+      const url = new URL(imageUrl);
+      // Check if it's a valid HTTP/HTTPS URL
+      if (!['http:', 'https:'].includes(url.protocol)) return false;
+
+      // Check if it has a valid image extension or is from common image hosts
+      const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+      const validHosts = ['images.unsplash.com', 'cdn.pixabay.com', 'images.pexels.com', 'firebasestorage.googleapis.com'];
+
+      const hasValidExtension = validExtensions.some(ext =>
+        url.pathname.toLowerCase().includes(ext)
+      );
+      const isValidHost = validHosts.some(host =>
+        url.hostname.includes(host)
+      );
+
+      return hasValidExtension || isValidHost;
+    } catch {
+      return false;
+    }
+  };
+
+  // Validation functions
+  const validateRecipe = (recipe: any): boolean => {
+    // Check for blank/incomplete recipes with stricter criteria
+    if (!recipe.title || recipe.title.trim() === '') return false;
+    if (!recipe.description || recipe.description.trim() === '') return false;
+    if (!recipe.cookingTime || recipe.cookingTime.trim() === '') return false;
+
+    // Check minimum length requirements
+    if (recipe.title.trim().length < 3) return false;
+    if (recipe.description.trim().length < 10) return false;
+
+    // Check for placeholder/dummy content
+    const title = recipe.title.trim().toLowerCase();
+    const description = recipe.description.trim().toLowerCase();
+
+    // Common placeholder patterns
+    const placeholderPatterns = [
+      /^¥\d+$/,           // ¥4, ¥123, etc.
+      /^test/,            // test, testing, etc.
+      /^sample/,          // sample recipe
+      /^placeholder/,     // placeholder text
+      /^lorem ipsum/,     // lorem ipsum text
+      /^untitled/,        // untitled recipe
+      /^recipe \d+$/,     // recipe 1, recipe 2, etc.
+      /^new recipe$/,     // new recipe
+      /^\d+$/,            // just numbers
+      /^[a-z]$/,          // single letters
+    ];
+
+    // Check if title matches any placeholder pattern
+    if (placeholderPatterns.some(pattern => pattern.test(title))) {
+      return false;
+    }
+
+    // Check if description matches any placeholder pattern
+    if (placeholderPatterns.some(pattern => pattern.test(description))) {
+      return false;
+    }
+
+    // Validate arrays with meaningful content
+    if (!Array.isArray(recipe.ingredients) || recipe.ingredients.length === 0) return false;
+    if (!Array.isArray(recipe.instructions) || recipe.instructions.length === 0) return false;
+
+    // Check that ingredients and instructions have meaningful content
+    const validIngredients = recipe.ingredients.filter((ing: string) =>
+      ing && ing.trim().length > 2 && !placeholderPatterns.some(pattern => pattern.test(ing.trim().toLowerCase()))
+    );
+
+    const validInstructions = recipe.instructions.filter((inst: string) =>
+      inst && inst.trim().length > 5 && !placeholderPatterns.some(pattern => pattern.test(inst.trim().toLowerCase()))
+    );
+
+    if (validIngredients.length === 0) {
+      return false;
+    }
+
+    if (validInstructions.length === 0) {
+      return false;
+    }
+
+    // Check for valid servings
+    if (!recipe.servings || recipe.servings < 1) return false;
+
+    return true;
+  };
+
+  const removeDuplicateRecipes = (recipes: Recipe[]): Recipe[] => {
+    const uniqueRecipes: Recipe[] = [];
+    const seenTitles = new Map<string, Recipe>();
+
+    for (const recipe of recipes) {
+      // Normalize title for comparison
+      const normalizedTitle = recipe.title.toLowerCase().trim()
+        .replace(/[^\w\s]/g, '') // Remove special characters
+        .replace(/\s+/g, ' '); // Normalize whitespace
+
+      // Check for exact title match first
+      if (seenTitles.has(normalizedTitle)) {
+        const existingRecipe = seenTitles.get(normalizedTitle)!;
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Exact duplicate recipe removed: "${recipe.title}"`);
+        }
+        continue;
+      }
+
+      // Check for similar titles (fuzzy matching)
+      let isDuplicate = false;
+      for (const [existingTitle, existingRecipe] of seenTitles.entries()) {
+        // Calculate similarity (simple approach)
+        const similarity = calculateSimilarity(normalizedTitle, existingTitle);
+        if (similarity > 0.8) { // 80% similarity threshold
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Similar recipe removed: "${recipe.title}" (similarity: ${similarity.toFixed(2)})`);
+          }
+          isDuplicate = true;
+          break;
+        }
+      }
+
+      if (!isDuplicate) {
+        seenTitles.set(normalizedTitle, recipe);
+        uniqueRecipes.push(recipe);
+      }
+    }
+
+    return uniqueRecipes;
+  };
+
+  // Simple similarity calculation function
+  const calculateSimilarity = (str1: string, str2: string): number => {
+    const words1 = str1.split(' ');
+    const words2 = str2.split(' ');
+    const allWords = new Set([...words1, ...words2]);
+    const commonWords = words1.filter(word => words2.includes(word));
+    return commonWords.length / allWords.size;
+  };
+
+  // Handle client-side hydration
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Fetch recipes from Firebase
   useEffect(() => {
+    if (!isClient) return; // Wait for client-side hydration
+
     const fetchRecipes = async () => {
       if (!db) {
         console.log('Database not initialized, retrying...');
@@ -149,25 +510,46 @@ export default function ExploreRecipesPage() {
 
       try {
         setLoading(true);
-        console.log('Fetching recipes from Firebase...');
-        
-        // Simplified query without ordering to avoid potential issues
+        // Fetch recipes from Firebase
         const recipesQuery = query(
           collection(db, 'recipes'),
           limit(100)
         );
-        
-        console.log('Query created:', recipesQuery);
-        
+
         const querySnapshot = await getDocs(recipesQuery);
-        console.log('Query snapshot received:', querySnapshot);
-        console.log('Number of documents:', querySnapshot.size);
-        
+
         const fetchedRecipes: Recipe[] = [];
-        
+        let invalidRecipeCount = 0;
+        let invalidImageCount = 0;
+
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          console.log('Document data:', doc.id, data);
+
+          // Basic logging for debugging (only in development)
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Processing recipe ${doc.id}: "${data.title}"`);
+          }
+
+          // Validate recipe content first
+          if (!validateRecipe(data)) {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn(`❌ Invalid recipe skipped: ${doc.id} - "${data.title || 'No title'}"`);
+            }
+            invalidRecipeCount++;
+            return;
+          }
+
+          // If recipe has an image URL, validate it
+          if (data.imageUrl && data.imageUrl.trim() !== '') {
+            if (!isValidImageUrl(data.imageUrl)) {
+              if (process.env.NODE_ENV === 'development') {
+                console.warn(`❌ Invalid image URL for recipe ${doc.id} - "${data.title}"`);
+              }
+              invalidImageCount++;
+              return; // Skip recipes with invalid image URLs
+            }
+          }
+
           fetchedRecipes.push({
             id: doc.id,
             title: data.title || '',
@@ -182,19 +564,46 @@ export default function ExploreRecipesPage() {
             imageUrl: data.imageUrl || undefined,
           });
         });
-        
+
+        // Remove duplicate recipes
+        const uniqueRecipes = removeDuplicateRecipes(fetchedRecipes);
+        const duplicateCount = fetchedRecipes.length - uniqueRecipes.length;
+
+        // Final validation pass - double check all recipes
+        const finalValidRecipes = uniqueRecipes.filter(recipe => {
+          const isValid = validateRecipe(recipe);
+          if (!isValid) {
+            console.warn(`❌ Final validation failed for: "${recipe.title}"`);
+          }
+          return isValid;
+        });
+
         // Sort recipes by title for consistent display
-        fetchedRecipes.sort((a, b) => a.title.localeCompare(b.title));
-        
-        console.log(`Fetched ${fetchedRecipes.length} recipes`);
-        setRecipes(fetchedRecipes);
-        setFilteredRecipes(fetchedRecipes);
+        finalValidRecipes.sort((a, b) => a.title.localeCompare(b.title));
+
+        const finalInvalidCount = uniqueRecipes.length - finalValidRecipes.length;
+
+        // Validation complete - statistics logged to console
+
+        // Log summary only in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`📊 Recipe Processing Summary:`);
+          console.log(`  Total documents: ${querySnapshot.size}`);
+          console.log(`  Invalid content: ${invalidRecipeCount}`);
+          console.log(`  Invalid images: ${invalidImageCount}`);
+          console.log(`  Duplicates removed: ${duplicateCount}`);
+          console.log(`  Final validation failures: ${finalInvalidCount}`);
+          console.log(`  ✅ Valid recipes: ${finalValidRecipes.length}`);
+        }
+
+        setRecipes(finalValidRecipes);
+        setFilteredRecipes(finalValidRecipes);
       } catch (error: any) {
         console.error('Error fetching recipes:', error);
         console.error('Error code:', error.code);
         console.error('Error message:', error.message);
         console.error('Error details:', error);
-        
+
         // Set empty array to avoid undefined state
         setRecipes([]);
         setFilteredRecipes([]);
@@ -204,7 +613,7 @@ export default function ExploreRecipesPage() {
     };
 
     fetchRecipes();
-  }, []);
+  }, [isClient]);
 
   // Update displayed recipes when filtered recipes change
   useEffect(() => {
@@ -216,12 +625,12 @@ export default function ExploreRecipesPage() {
   // Load more recipes function
   const loadMoreRecipes = () => {
     if (loadingMore || !hasMore) return;
-    
+
     setLoadingMore(true);
     const nextPage = currentPage + 1;
     const startIndex = (nextPage - 1) * RECIPES_PER_PAGE;
     const endIndex = startIndex + RECIPES_PER_PAGE;
-    
+
     const newRecipes = filteredRecipes.slice(startIndex, endIndex);
     setDisplayedRecipes(prev => [...prev, ...newRecipes]);
     setCurrentPage(nextPage);
@@ -232,11 +641,11 @@ export default function ExploreRecipesPage() {
   // Infinite scroll handler
   const handleScroll = useCallback(() => {
     if (loadingMore || !hasMore) return;
-    
+
     const scrollTop = window.scrollY;
     const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
-    
+
     // Load more when user is near bottom (within 200px)
     if (scrollTop + windowHeight >= documentHeight - 200) {
       loadMoreRecipes();
@@ -259,10 +668,10 @@ export default function ExploreRecipesPage() {
       filtered = filtered.filter(recipe =>
         recipe.title.toLowerCase().includes(query) ||
         recipe.description.toLowerCase().includes(query) ||
-        recipe.ingredients.some(ingredient => 
+        recipe.ingredients.some(ingredient =>
           ingredient.toLowerCase().includes(query)
         ) ||
-        recipe.tags.some(tag => 
+        recipe.tags.some(tag =>
           tag.toLowerCase().includes(query)
         )
       );
@@ -279,7 +688,7 @@ export default function ExploreRecipesPage() {
     if (filters.cookingTime.length > 0) {
       filtered = filtered.filter(recipe => {
         const time = recipe.cookingTime.toLowerCase();
-        return filters.cookingTime.some(filterTime => 
+        return filters.cookingTime.some(filterTime =>
           time.includes(filterTime.toLowerCase())
         );
       });
@@ -382,7 +791,7 @@ export default function ExploreRecipesPage() {
 
   const handleViewRecipe = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
-    
+
     // Use panel for desktop (large screens), modal for mobile/tablet (small screens)
     if (isMobile || typeof isMobile === 'undefined') {
       setIsRecipePanelOpen(false);
@@ -419,6 +828,22 @@ export default function ExploreRecipesPage() {
     window.location.href = '/meal-planning';
   };
 
+  // Show loading until client-side hydration is complete
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto mb-4"
+          />
+          <p className="text-muted-foreground">Loading recipes...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -439,7 +864,7 @@ export default function ExploreRecipesPage() {
               <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link>
               <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
             </div>
-            
+
             {/* User Authentication Section */}
             <div className="flex items-center space-x-4">
               {user ? (
@@ -465,7 +890,7 @@ export default function ExploreRecipesPage() {
                       <span>Meal Planner</span>
                     </Button>
                   </div>
-                  
+
                   {/* Mobile Menu Button */}
                   <div className="md:hidden">
                     <DropdownMenu>
@@ -504,7 +929,7 @@ export default function ExploreRecipesPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  
+
                   {/* Desktop User Menu */}
                   <div className="hidden md:block">
                     <DropdownMenu>
@@ -566,14 +991,14 @@ export default function ExploreRecipesPage() {
 
       {/* Main Content with Sidebar Layout */}
       <div className="flex min-h-screen">
-                {/* Left Sidebar - Filters Always Visible */}
+        {/* Left Sidebar - Filters Always Visible */}
         <div className={`${showFilters ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} 
           fixed lg:relative inset-y-0 left-0 z-40 
           w-72 sm:w-64 md:w-72 lg:w-64 xl:w-72
           bg-background/95 backdrop-blur-sm border-r border-border/40 
           flex-shrink-0 transition-transform duration-300 ease-in-out lg:transition-none 
           shadow-lg lg:shadow-sm flex flex-col overflow-hidden`}>
-          
+
           {/* Mobile/Tablet Header */}
           <div className="lg:hidden flex justify-between items-center p-3 border-b border-border/30 flex-shrink-0 bg-background/90">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -597,8 +1022,8 @@ export default function ExploreRecipesPage() {
 
           {/* Scrollable Content Area */}
           <div className="relative flex-1 overflow-hidden">
-            <ScrollArea 
-              className="h-full w-full" 
+            <ScrollArea
+              className="h-full w-full"
               type="always"
               scrollHideDelay={600}
             >
@@ -624,7 +1049,7 @@ export default function ExploreRecipesPage() {
                       </Button>
                     ))}
                   </div>
-                  
+
                   {/* Clear All Filters Button */}
                   {activeFiltersCount > 0 && (
                     <Button
@@ -923,6 +1348,8 @@ export default function ExploreRecipesPage() {
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
+
+
                 </div>
 
                 {/* Active Filters Summary */}
@@ -940,9 +1367,9 @@ export default function ExploreRecipesPage() {
                     <div className="flex flex-wrap gap-1.5">
                       {Object.entries(filters).map(([key, values]) =>
                         values.map((value: string) => (
-                          <Badge 
-                            key={`${key}-${value}`} 
-                            variant="outline" 
+                          <Badge
+                            key={`${key}-${value}`}
+                            variant="outline"
                             className="text-xs border-border/40 text-muted-foreground bg-background/50"
                           >
                             {value}
@@ -967,9 +1394,8 @@ export default function ExploreRecipesPage() {
         </div>
 
         {/* Right Content Area */}
-        <div className={`flex-1 min-w-0 transition-all duration-300 ${
-          !isMobile && isRecipePanelOpen ? 'mr-[480px] xl:mr-[520px] 2xl:mr-[580px]' : ''
-        }`}>
+        <div className={`flex-1 min-w-0 transition-all duration-300 ${!isMobile && isRecipePanelOpen ? 'mr-[480px] xl:mr-[520px] 2xl:mr-[580px]' : ''
+          }`}>
           {/* Mobile/Tablet Filter Toggle */}
           <div className="lg:hidden p-3 sm:p-4 border-b border-border/40 bg-background/95 backdrop-blur-sm sticky top-0 z-30">
             <Button
@@ -1000,6 +1426,7 @@ export default function ExploreRecipesPage() {
                   <span className="text-primary"> • Showing {displayedRecipes.length} of {filteredRecipes.length}</span>
                 )}
               </p>
+
             </div>
 
             {/* Loading State */}
@@ -1020,7 +1447,7 @@ export default function ExploreRecipesPage() {
                 <Utensils className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-foreground mb-2">No recipes found</h3>
                 <p className="text-muted-foreground mb-6">
-                  {searchQuery 
+                  {searchQuery
                     ? `No recipes match "${searchQuery}". Try adjusting your search or filters.`
                     : 'No recipes available at the moment.'
                   }
@@ -1035,11 +1462,10 @@ export default function ExploreRecipesPage() {
 
             {/* Recipes Grid */}
             {!loading && displayedRecipes.length > 0 && (
-              <div className={`grid gap-4 sm:gap-6 ${
-                !isMobile && isRecipePanelOpen 
-                  ? 'grid-cols-1 sm:grid-cols-2' 
-                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-              }`}>
+              <div className={`grid gap-4 sm:gap-6 ${!isMobile && isRecipePanelOpen
+                ? 'grid-cols-1 sm:grid-cols-2'
+                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                }`}>
                 <AnimatePresence>
                   {displayedRecipes.map((recipe, index) => (
                     <motion.div
@@ -1105,171 +1531,18 @@ export default function ExploreRecipesPage() {
 
       {/* Recipe Detail Modal - Mobile/Tablet only */}
       {(isMobile || typeof isMobile === 'undefined') && selectedRecipe && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.2 }}
-            className="relative max-w-4xl w-full h-[98vh] sm:h-[95vh] bg-background rounded-2xl shadow-2xl flex flex-col"
-          >
-            {/* Close Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={closeRecipeModal}
-              className="absolute top-4 right-4 z-20 bg-background/95 backdrop-blur-sm hover:bg-background rounded-lg border border-border/50 shadow-sm"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-
-            {/* Recipe Content */}
-            <div className="relative flex-1 flex flex-col">
-              {/* Header with Image */}
-              <div className="relative h-48 sm:h-64 bg-gradient-to-br from-accent/20 via-accent/10 to-accent/20 flex-shrink-0">
-                {selectedRecipe.imageUrl ? (
-                  <img 
-                    src={selectedRecipe.imageUrl} 
-                    alt={selectedRecipe.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <Utensils className="w-16 h-16 text-accent/50" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-6 text-white">
-                  <h1 className="text-2xl sm:text-3xl font-bold mb-2">{selectedRecipe.title}</h1>
-                  <p className="text-base sm:text-lg opacity-90 line-clamp-2">{selectedRecipe.description}</p>
-                </div>
-              </div>
-
-              {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 pb-12">
-                {/* Recipe Stats */}
-                <div className="flex flex-wrap items-center gap-6 p-4 bg-accent/50 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-primary" />
-                    <span className="font-medium">{selectedRecipe.cookingTime}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-primary" />
-                    <span className="font-medium">{selectedRecipe.servings} servings</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-primary" />
-                    <span className="font-medium">{selectedRecipe.difficulty}</span>
-                  </div>
-                  {selectedRecipe.calories && (
-                    <div className="flex items-center gap-2">
-                      <Flame className="w-5 h-5 text-destructive" />
-                      <span className="font-medium">{selectedRecipe.calories} calories</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2">
-                  {selectedRecipe.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-sm">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-
-                {/* Ingredients */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <ChefHat className="w-5 h-5 text-primary" />
-                    Ingredients
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {selectedRecipe.ingredients.map((ingredient, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 bg-accent/30 rounded-lg">
-                        <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
-                          {index + 1}
-                        </div>
-                        <span className="text-sm">{ingredient}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Instructions */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <Utensils className="w-5 h-5 text-primary" />
-                    Cooking Instructions
-                  </h3>
-                  <div className="space-y-4">
-                    {selectedRecipe.instructions.map((instruction, index) => (
-                      <div key={index} className="flex gap-4 p-4 bg-accent/30 rounded-lg">
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold flex-shrink-0 mt-1">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm leading-relaxed">{instruction}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Extra spacing to ensure content is not cut off */}
-                <div className="h-8"></div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-6 pb-4">
-                  {user ? (
-                    <>
-                      <Button className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-sm hover:shadow-md transition-all duration-200">
-                        Save Recipe
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="flex-1 hover:bg-accent/50 hover:border-border/60 transition-all duration-200"
-                        onClick={() => window.location.href = '/meal-planning'}
-                      >
-                        Add to Meal Plan
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Link href="/login" className="flex-1">
-                        <Button className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-sm hover:shadow-md transition-all duration-200">
-                          Sign In to Save Recipe
-                        </Button>
-                      </Link>
-                      <Button 
-                        variant="outline" 
-                        className="flex-1 hover:bg-accent/50 hover:border-border/60 transition-all duration-200"
-                        onClick={() => {
-                          if (navigator.share) {
-                            navigator.share({
-                              title: selectedRecipe.title,
-                              text: selectedRecipe.description,
-                              url: window.location.href
-                            });
-                          } else {
-                            navigator.clipboard.writeText(`Check out this recipe: ${selectedRecipe.title}`);
-                          }
-                        }}
-                      >
-                        Share Recipe
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+        <RecipeModal
+          recipe={selectedRecipe}
+          onClose={closeRecipeModal}
+          user={user}
+        />
       )}
+
+
 
       {/* Recipe Detail Panel - Desktop only */}
       {!isMobile && typeof isMobile !== 'undefined' && (
-        <RecipePanel 
+        <RecipePanel
           recipe={selectedRecipe}
           isOpen={isRecipePanelOpen}
           onClose={handleCloseRecipePanel}
